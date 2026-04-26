@@ -881,25 +881,11 @@ function renderStock(){
     <datalist id="usageOptions">${itOpts}</datalist>
   </div>`;
 
-  el.innerHTML=stock.map((s,idx)=>`
-  el.innerHTML = stock.map((s, idx) => `
+  el.innerHTML=stock.map((s,idx)=>
     <div class="stock-card">
         <div class="stock-hdr" style="display:flex; justify-content:space-between; align-items:center;">
             <div onclick="toggleStock(${idx})" style="flex-grow:1; cursor:pointer;">
-                <div style="font-weight:bold;">${s.name}</div>
-                <div style="font-size:0.8rem; color:gray;">Current Qty: ${s.qty}</div>
-            </div>
-
-            <button onclick="event.stopPropagation(); deleteStockItem(${idx})" 
-                    style="background:none; border:none; color:#ff4d4d; font-size:1.2rem; padding:10px; cursor:pointer;">
-                🗑️
-            </button>
-        </div>
         
-        <div id="stock-details-${idx}" style="display:none; padding:10px; border-top:1px solid #eee;">
-            </div>
-    </div>
-`).join('');
     <div class="stock-card">
       <div class="stock-hdr" onclick="toggleStock(${idx})">
         <div>
@@ -1033,23 +1019,18 @@ async function deleteTx() {
   
   // --- DELETE STOCK ITEM ---
 async function deleteStockItem(event, itemName) {
-    // This stops the "Open Details" from triggering when you click Delete
-    event.stopPropagation(); 
-
+    event.stopPropagation(); // Stops the stock card from opening when clicking delete
     if (!confirm(`Permanently remove "${itemName}" from PS Enterprises stock?`)) return;
 
-    // Remove from local list
     stock = stock.filter(s => s.name !== itemName);
 
-    // Sync to Firebase
     try {
-        await db.collection("userdata").doc("ps_enterprise_data").update({
-            stock: stock
-        });
-        renderStock(); // Refresh your stock list screen
+        await db.collection("userdata").doc("ps_enterprise_data").update({ stock: stock });
+        renderStock();
+        renderHome(); // Updates the home screen count
         alert("✅ Item removed from Cloud");
     } catch (e) {
-        alert("❌ Error: " + e.message);
+        alert("❌ Cloud Error: " + e.message);
     }
 }
   </script>
