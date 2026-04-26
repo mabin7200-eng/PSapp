@@ -919,29 +919,27 @@ function recordUsage(idx){
 }
 
 async function deleteStockItem(index) {
+    // 1. Ask for permission
     const itemName = stock[index].name;
-    if (!confirm(`Are you sure you want to remove "${itemName}" from PS Enterprises stock?`)) return;
+    if (!confirm(`Delete "${itemName}" from PS Enterprises records?`)) return;
 
-    // 1. Create a NEW copy of the stock list without the deleted item
-    const updatedStock = stock.filter((_, i) => i !== index);
+    // 2. Remove it from the list
+    const newStock = [...stock]; // Create a copy
+    newStock.splice(index, 1);   // Remove the item at that position
 
-    // 2. IMPORTANT: Overwrite the data in the Firebase Cloud
+    // 3. Update the Cloud (Firebase)
     try {
         await db.collection("userdata").doc("ps_enterprise_data").update({
-            stock: updatedStock
+            stock: newStock
         });
 
-        // 3. ONLY IF CLOUD SUCCESS: Update your app's local memory
-        stock = updatedStock;
-        localStorage.setItem('stockv2', JSON.stringify(stock));
-
-        // 4. Refresh the UI
+        // 4. Update the app's memory and screen
+        stock = newStock;
         renderStock();
-        renderHome(); // Updates dropdowns
-        alert("✅ Stock item removed from Cloud!");
+        alert("✅ Deleted successfully!");
     } catch (error) {
         console.error("Cloud Error:", error);
-        alert("❌ Error: Could not update database. Check internet.");
+        alert("❌ Failed to delete. Check internet connection.");
     }
 }
 
