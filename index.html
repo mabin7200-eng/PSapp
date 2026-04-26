@@ -23,48 +23,209 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;min-height:100vh;}
 
+/* SCREENS */
 .screen{display:none;min-height:100vh;padding-bottom:90px;}
 .screen.active{display:block;}
 
+/* TOP BAR */
 .topbar{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-back{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
+.topbar-back:hover{background:rgba(255,255,255,0.3);}
 .topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;flex:1;}
+.topbar-actions{display:flex;gap:8px;}
+.topbar-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:7px 12px;font-family:'Barlow',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.2s;}
+.topbar-btn:hover{background:rgba(255,255,255,0.28);}
 
+/* HOME SCREEN */
 .home-header{background:linear-gradient(135deg,var(--accent) 0%,#2563eb 100%);color:#fff;padding:22px 18px 18px;display:flex;align-items:center;gap:14px;}
-.home-logo{width:46px;height:46px;background:rgba(255,255,255,0.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;border:2px solid rgba(255,255,255,0.3);}
-.home-cards{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.home-card{border-radius:var(--radius);padding:20px 16px;cursor:pointer;background:#fff;border:1px solid var(--border);position:relative;overflow:hidden;}
-.home-card.expense-card{background:linear-gradient(135deg,#fff1f2,#fde8e8);border-color:#fca5a5;}
-.home-card.stock-card{background:linear-gradient(135deg,#f0fdf4,#def7ec);border-color:#6ee7b7;}
-.home-card-amount{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;}
+.home-logo{width:46px;height:46px;background:rgba(255,255,255,0.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;letter-spacing:-1px;border:2px solid rgba(255,255,255,0.3);flex-shrink:0;}
+.home-date{font-size:0.68rem;opacity:0.65;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase;}
+.home-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;opacity:0.85;margin-top:1px;}
 
+.home-cards{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.home-card{border-radius:var(--radius);padding:20px 16px;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;border:1px solid transparent;position:relative;overflow:hidden;}
+.home-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.home-card::after{content:'';position:absolute;bottom:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.12;}
+.home-card.expense-card{background:linear-gradient(135deg,#fff1f2,#fde8e8);border-color:#fca5a5;}
+.home-card.expense-card::after{background:var(--red);}
+.home-card.stock-card{background:linear-gradient(135deg,#f0fdf4,#def7ec);border-color:#6ee7b7;}
+.home-card.stock-card::after{background:var(--green);}
+.home-card-icon{font-size:1.8rem;margin-bottom:10px;display:block;}
+.home-card-label{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:4px;}
+.home-card-amount{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;line-height:1;}
+.home-card.expense-card .home-card-amount{color:var(--red);}
+.home-card.stock-card .home-card-amount{color:var(--green);}
+.home-card-sub{font-size:0.72rem;color:var(--muted);margin-top:5px;}
+.home-card-arrow{position:absolute;top:14px;right:14px;font-size:0.9rem;color:var(--muted2);}
+
+/* CAT SUMMARY INSIDE EXPENSE */
 .exp-cat-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 16px 0;}
 .cat-sum-card{background:var(--surface);border-radius:10px;padding:11px 14px;box-shadow:var(--shadow);border-left:4px solid transparent;}
 .cat-sum-card.Product{border-color:var(--green);}
 .cat-sum-card.Labour{border-color:var(--purple);}
+.cat-sum-card.Transport{border-color:var(--orange);}
+.cat-sum-card.Loading{border-color:var(--pink);}
+.cat-sum-label{font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;}
+.cat-sum-amount{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);margin-top:3px;}
+.cat-sum-count{font-size:0.66rem;color:var(--muted2);}
 
+/* EXPENSE SCREEN */
 .filter-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;}
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
-.filter-chip{background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
-.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.filter-chip{background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.15s;white-space:nowrap;}
+.filter-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.filter-date-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;}
+.filter-date-row label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;display:block;margin-bottom:3px;}
+.filter-date-row input{padding:7px 10px;font-size:0.8rem;}
+.clear-filter-btn{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;font-family:'Barlow',sans-serif;}
+.clear-filter-btn:hover{color:var(--red);border-color:var(--red);}
 
-.tx-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px;cursor:pointer;border:1px solid var(--border);}
-.tx-total{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--red);}
+.expense-list-wrap{padding:14px 16px;}
+.filtered-total{background:var(--text);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.filtered-total .ft-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.7;font-family:'Barlow Condensed',sans-serif;}
+.filtered-total .ft-amount{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:800;}
+.filtered-total .ft-count{font-size:0.72rem;opacity:0.6;}
 
-.fab{position:fixed;bottom:24px;right:18px;z-index:90;background:var(--accent);color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 18px rgba(26,86,219,0.4);display:flex;align-items:center;justify-content:center;}
+/* TX CARDS */
+.tx-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px;cursor:pointer;border:1px solid var(--border);transition:box-shadow 0.2s,transform 0.15s;}
+.tx-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.tx-card-top{display:flex;align-items:center;gap:10px;}
+.tx-id-badge{font-size:0.65rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:20px;flex-shrink:0;}
+.tx-name{font-weight:700;font-size:0.95rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tx-total{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--red);flex-shrink:0;}
+.tx-card-meta{margin-top:7px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.cat-badge{font-size:0.63rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;}
+.cat-badge.Labour{background:var(--purple-light);color:var(--purple);}
+.cat-badge.Transport{background:var(--orange-light);color:var(--orange);}
+.cat-badge.Loading{background:var(--pink-light);color:var(--pink);}
+.cat-badge.Product{background:var(--green-light);color:var(--green);}
+.tx-date-sm{font-size:0.7rem;color:var(--muted2);}
+.tx-items-ct{font-size:0.68rem;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:10px;}
+.tx-note-sm{font-size:0.7rem;color:var(--muted);margin-top:5px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
+/* FAB */
+.fab{position:fixed;bottom:24px;right:18px;z-index:90;background:var(--accent);color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 18px rgba(26,86,219,0.45);transition:transform 0.2s,box-shadow 0.2s;display:none;}
+.fab:hover{transform:scale(1.1);box-shadow:0 6px 24px rgba(26,86,219,0.55);}
+.fab.visible{display:flex;align-items:center;justify-content:center;}
+
+/* ADD FORM SCREEN */
 .add-wrap{padding:16px;}
 .card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px;}
-input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:10px;outline:none;}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;}
+label{display:block;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;font-family:'Barlow Condensed',sans-serif;}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff;}
+textarea{resize:vertical;min-height:60px;}
+.form-row{display:grid;gap:10px;margin-bottom:10px;}
+.form-row.c2{grid-template-columns:1fr 1fr;}
 
-.stock-card{background:#fff;margin-bottom:10px;border-radius:12px;border:1px solid #e2e5eb;overflow:hidden;}
-.stock-hdr{padding:15px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
-.stock-body{display:none;padding:15px;background:#f9fafb;border-top:1px solid #eee;}
-.stock-body.open{display:block;}
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;}
+.cat-opt{border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all 0.18s;font-weight:700;font-size:0.82rem;background:var(--surface2);}
+.cat-opt .ci{font-size:1.3rem;display:block;margin-bottom:4px;}
+.cat-opt.selected.Product{border-color:var(--green);background:var(--green-light);color:var(--green);}
+.cat-opt.selected.Labour{border-color:var(--purple);background:var(--purple-light);color:var(--purple);}
+.cat-opt.selected.Transport{border-color:var(--orange);background:var(--orange-light);color:var(--orange);}
+.cat-opt.selected.Loading{border-color:var(--pink);background:var(--pink-light);color:var(--pink);}
 
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.item-rows-wrap{border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+.item-row-hdr{display:grid;background:var(--surface2);padding:7px 10px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;border-bottom:1px solid var(--border);gap:6px;}
+.item-row{display:grid;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);align-items:center;}
+.item-row:last-child{border-bottom:none;}
+.item-row.pr{grid-template-columns:2fr 1.2fr 0.8fr 0.9fr 0.9fr auto;}
+.item-row-hdr.pr{grid-template-columns:2fr 1.2fr 0.8fr 0.9fr 0.9fr auto;}
+.item-row.la{grid-template-columns:2fr 1fr 0.8fr 0.8fr 0.9fr 0.9fr auto;}
+.item-row-hdr.la{grid-template-columns:2fr 1fr 0.8fr 0.8fr 0.9fr 0.9fr auto;}
+.item-row.tr,.item-row.lo{grid-template-columns:2fr 0.8fr 0.9fr 0.9fr auto;}
+.item-row-hdr.tr,.item-row-hdr.lo{grid-template-columns:2fr 0.8fr 0.9fr 0.9fr auto;}
+.row-total{font-weight:700;color:var(--red);font-size:0.82rem;text-align:right;}
+.del-row{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:0.95rem;padding:3px;border-radius:4px;}
+.del-row:hover{color:var(--red);background:var(--red-light);}
+.add-row-btn{background:none;border:1.5px dashed var(--border);border-radius:8px;color:var(--accent);font-family:'Barlow',sans-serif;font-size:0.8rem;font-weight:600;padding:9px;cursor:pointer;width:100%;transition:all 0.2s;}
+.add-row-btn:hover{background:var(--accent-light);border-color:var(--accent);}
+.unit-pick-btn{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 8px;font-size:0.78rem;font-weight:600;cursor:pointer;text-align:left;color:var(--text);font-family:'Barlow',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.grand-bar{background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.grand-bar .gl{font-weight:700;font-size:0.82rem;color:var(--muted);}
+.grand-bar .ga{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;color:var(--red);}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:8px;padding:10px 18px;font-family:'Barlow',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.18s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);}
+.btn-sm{padding:6px 12px;font-size:0.75rem;}
+.btn-full{width:100%;}
+
+/* DETAIL MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
 .modal-ov.open{display:flex;}
-.modal-box{background:var(--surface);border-radius:14px;width:100%;max-width:500px;padding:20px;}
+.modal-box{background:var(--surface);border-radius:14px;width:100%;max-width:680px;box-shadow:var(--shadow-md);margin:auto;}
+.modal-hdr{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.modal-hdr h2{font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;}
+.modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;}
+.modal-close:hover{background:var(--surface2);}
+.modal-body{padding:16px 18px;}
+.dmeta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.dmeta span{font-size:0.76rem;color:var(--muted2);background:var(--surface2);padding:4px 11px;border-radius:20px;}
+.dmeta span b{color:var(--text2);}
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);margin-bottom:12px;}
+table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+thead tr{background:var(--surface2);}
+th{padding:8px 11px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);border-bottom:1px solid var(--border);}
+td{padding:8px 11px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.tfoot-row td{font-weight:700;background:var(--surface2);font-family:'Barlow Condensed',sans-serif;}
+
+/* UNIT MODAL */
+.unit-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;}
+.unit-ov.open{display:flex;}
+.unit-box{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:320px;}
+.unit-box h3{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:12px;}
+.unit-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.uchip{background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.uchip:hover{border-color:var(--accent);color:var(--accent);}
+.uchip.sel{background:var(--accent);border-color:var(--accent);color:#fff;}
+.unit-add-row{display:flex;gap:8px;margin-bottom:12px;}
+.unit-add-row input{flex:1;padding:8px 11px;}
+.unit-add-row button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap;}
+
+/* STOCK SCREEN */
+.stock-wrap{padding:14px 16px;}
+.stock-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;}
+.stock-hdr{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;}
+.stock-hdr:hover{background:var(--surface2);}
+.stock-name{font-weight:700;font-size:0.92rem;}
+.stock-unit{font-size:0.7rem;color:var(--muted2);margin-top:2px;}
+.stock-qty{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.15rem;color:var(--green);}
+.stock-qty.low{color:var(--red);}
+.stock-body{display:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2);}
+.stock-body.open{display:block;}
+.use-form{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px;}
+.use-log-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.77rem;}
+.use-log-item:last-child{border-bottom:none;}
+.log-in{color:var(--green);font-weight:700;}
+.log-out{color:var(--red);font-weight:700;}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted2);}
+.empty-state .ei{font-size:2rem;display:block;margin-bottom:10px;}
+
+@media(max-width:480px){
+  .home-cards{grid-template-columns:1fr 1fr;}
+  .home-cat-summary{grid-template-columns:1fr 1fr;}
+  .item-row.pr,.item-row-hdr.pr{grid-template-columns:2fr 1fr 1fr auto;}
+  .item-row.la,.item-row-hdr.la{grid-template-columns:2fr 1fr 1fr auto;}
+  .item-row.tr,.item-row.lo,.item-row-hdr.tr,.item-row-hdr.lo{grid-template-columns:2fr 1fr 1fr auto;}
+}
+
+/* PRINT / PDF */
+@media print{
+  .topbar,.fab,.filter-panel,.modal-ov,.unit-ov{display:none!important;}
+  body{background:#fff;}
+  .screen{display:block!important;padding:0;}
+  .tx-card{break-inside:avoid;box-shadow:none;border:1px solid #ddd;}
+}
 </style>
 </head>
 <body>
@@ -73,18 +234,25 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
   <div class="home-header">
     <div class="home-logo">PS</div>
     <div class="home-header-text">
-      <div id="homeDate" style="font-size:0.68rem; opacity:0.7; text-transform:uppercase; letter-spacing:1px;"></div>
-      <div style="font-family:'Barlow Condensed'; font-weight:700;">PS Enterprises Manager</div>
+      <div class="home-date" id="homeDate"></div>
+      <div class="home-title">Tap a section to open</div>
     </div>
   </div>
+
   <div class="home-cards">
     <div class="home-card expense-card" onclick="openExpense()">
-      <div style="font-size:0.7rem; font-weight:700; color:var(--muted);">TOTAL EXPENSES</div>
+      <span class="home-card-icon">💸</span>
+      <div class="home-card-label">Total Expenses</div>
       <div class="home-card-amount" id="homeExpTotal">₹0</div>
+      <div class="home-card-sub" id="homeExpCount">0 transactions</div>
+      <span class="home-card-arrow">›</span>
     </div>
     <div class="home-card stock-card" onclick="openStock()">
-      <div style="font-size:0.7rem; font-weight:700; color:var(--muted);">STOCK ITEMS</div>
+      <span class="home-card-icon">📦</span>
+      <div class="home-card-label">Stock Items</div>
       <div class="home-card-amount" id="homeStockCount">0</div>
+      <div class="home-card-sub" id="homeStockSub">items tracked</div>
+      <span class="home-card-arrow">›</span>
     </div>
   </div>
 </div>
@@ -93,47 +261,118 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Expenses</span>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="savePDF()">⬇ PDF</button>
+    </div>
   </div>
+
   <div class="exp-cat-summary">
     <div class="cat-sum-card Product">
-      <div style="font-size:0.6rem; font-weight:700; color:var(--muted);">PRODUCT</div>
-      <div id="csProduct" style="font-weight:800; font-family:'Barlow Condensed';">₹0</div>
+      <div class="cat-sum-label">Product</div>
+      <div class="cat-sum-amount" id="csProduct">₹0</div>
+      <div class="cat-sum-count" id="csProductC">0 entries</div>
     </div>
     <div class="cat-sum-card Labour">
-      <div style="font-size:0.6rem; font-weight:700; color:var(--muted);">LABOUR</div>
-      <div id="csLabour" style="font-weight:800; font-family:'Barlow Condensed';">₹0</div>
+      <div class="cat-sum-label">Labour</div>
+      <div class="cat-sum-amount" id="csLabour">₹0</div>
+      <div class="cat-sum-count" id="csLabourC">0 entries</div>
+    </div>
+    <div class="cat-sum-card Transport">
+      <div class="cat-sum-label">Transport</div>
+      <div class="cat-sum-amount" id="csTransport">₹0</div>
+      <div class="cat-sum-count" id="csTransportC">0 entries</div>
+    </div>
+    <div class="cat-sum-card Loading">
+      <div class="cat-sum-label">Loading</div>
+      <div class="cat-sum-amount" id="csLoading">₹0</div>
+      <div class="cat-sum-count" id="csLoadingC">0 entries</div>
     </div>
   </div>
+
   <div class="filter-panel">
-      <div class="filter-row">
-          <div class="filter-chip active" onclick="setExpFilter('all',this)">All</div>
-          <div class="filter-chip" onclick="setExpFilter('Product',this)">Product</div>
-          <div class="filter-chip" onclick="setExpFilter('Labour',this)">Labour</div>
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="setExpFilter('all',this)">All</div>
+      <div class="filter-chip" onclick="setExpFilter('Product',this)">📦 Product</div>
+      <div class="filter-chip" onclick="setExpFilter('Labour',this)">👷 Labour</div>
+      <div class="filter-chip" onclick="setExpFilter('Transport',this)">🚗 Transport</div>
+      <div class="filter-chip" onclick="setExpFilter('Loading',this)">🏗 Loading</div>
+    </div>
+    <div class="filter-date-row">
+      <div>
+        <label>From Date</label>
+        <input type="date" id="filterFrom" onchange="renderExpense()"/>
       </div>
+      <div>
+        <label>To Date</label>
+        <input type="date" id="filterTo" onchange="renderExpense()"/>
+      </div>
+      <button class="clear-filter-btn" onclick="clearFilters()">✕ Clear</button>
+    </div>
   </div>
-  <div id="expenseList" style="padding:16px;"></div>
-  <button class="fab" onclick="showScreen('add')">+</button>
+
+  <div class="expense-list-wrap" id="expenseListWrap">
+    <div class="filtered-total">
+      <div>
+        <div class="ft-label">Showing Total</div>
+        <div class="ft-amount" id="filteredTotal">₹0.00</div>
+      </div>
+      <div class="ft-count" id="filteredCount">0 records</div>
+    </div>
+    <div id="expenseList"></div>
+  </div>
+
+  <button class="fab visible" onclick="openAdd()" title="Add Transaction">+</button>
 </div>
 
 <div class="screen" id="screen-add">
   <div class="topbar">
-    <button class="topbar-back" onclick="showScreen('expense')">‹</button>
-    <span class="topbar-title">New Entry</span>
+    <button class="topbar-back" onclick="closeAdd()">‹</button>
+    <span class="topbar-title">New Transaction</span>
   </div>
   <div class="add-wrap">
     <div class="card">
-      <label style="font-size:0.7rem; font-weight:700;">PARTY NAME</label>
-      <input type="text" id="txName" placeholder="Enter name">
-      <label style="font-size:0.7rem; font-weight:700;">AMOUNT (₹)</label>
-      <input type="number" id="txAmount" placeholder="0.00">
-      <label style="font-size:0.7rem; font-weight:700;">CATEGORY</label>
-      <select id="txCat">
-        <option value="Product">Product</option>
-        <option value="Labour">Labour</option>
-        <option value="Transport">Transport</option>
-        <option value="Loading">Loading</option>
-      </select>
-      <button onclick="saveTransaction()" style="width:100%; background:var(--accent); color:#fff; padding:12px; border:none; border-radius:8px; font-weight:700; margin-top:10px;">SAVE TRANSACTION</button>
+      <div class="form-row c2" style="margin-bottom:10px;">
+        <div>
+          <label>Transaction ID</label>
+          <input type="text" id="txId" readonly style="background:#f0f2f5;color:var(--muted);font-weight:700;"/>
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="txDate"/>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label>Name (Party / Person)</label>
+        <input type="text" id="txName" list="namesList" placeholder="Type or select..." autocomplete="off"/>
+        <datalist id="namesList"></datalist>
+      </div>
+      <label>Category</label>
+      <div class="cat-grid">
+        <div class="cat-opt" onclick="selectCat('Product',this)"><span class="ci">📦</span>Product</div>
+        <div class="cat-opt" onclick="selectCat('Labour',this)"><span class="ci">👷</span>Labour</div>
+        <div class="cat-opt" onclick="selectCat('Transport',this)"><span class="ci">🚗</span>Transport</div>
+        <div class="cat-opt" onclick="selectCat('Loading',this)"><span class="ci">🏗️</span>Loading</div>
+      </div>
+      <div id="itemsSection" style="display:none;">
+        <label style="margin-bottom:8px;">Items</label>
+        <div class="item-rows-wrap">
+          <div class="item-row-hdr" id="itemHdr"></div>
+          <div id="itemRowsBody"></div>
+        </div>
+        <button class="add-row-btn" onclick="addItemRow()">+ Add Item Row</button>
+      </div>
+      <div class="grand-bar">
+        <span class="gl">Grand Total</span>
+        <span class="ga" id="grandTotalDisp">₹0.00</span>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label>Note (Optional)</label>
+        <textarea id="txNote" placeholder="Additional notes..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-success btn-full" onclick="saveTransaction()">✓ Save</button>
+        <button class="btn btn-ghost" onclick="resetForm()">✕</button>
+      </div>
     </div>
   </div>
 </div>
@@ -142,17 +381,54 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Stock</span>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="saveStockPDF()">⬇ PDF</button>
+    </div>
   </div>
-  <div id="stockList" style="padding:16px;"></div>
+  <div class="stock-wrap">
+    <div id="stockSummaryBar" style="margin-bottom:12px;"></div>
+    <div id="stockList"></div>
+  </div>
 </div>
 
 <div class="modal-ov" id="detailModal">
   <div class="modal-box">
-    <h2 id="detailTitle" style="font-family:'Barlow Condensed';">Detail</h2>
-    <div id="detailContent" style="margin:15px 0; font-size:0.9rem;"></div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button onclick="deleteTx()" style="background:var(--red); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700;">DELETE</button>
-        <button onclick="closeDetail()" style="background:var(--surface2); border:1px solid var(--border); padding:10px; border-radius:8px; font-weight:700;">CLOSE</button>
+    <div class="modal-hdr">
+      <div>
+        <div style="font-size:0.68rem;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Transaction Detail</div>
+        <h2 id="detailTitle">—</h2>
+      </div>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="dmeta" id="detailMeta"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr id="detailThead"></tr></thead>
+          <tbody id="detailTbody"></tbody>
+          <tfoot><tr class="tfoot-row" id="detailTfoot"></tr></tfoot>
+        </table>
+      </div>
+      <div id="detailNote" style="font-size:0.8rem;color:var(--muted);font-style:italic;"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-danger btn-sm" onclick="deleteTx()">🗑 Delete</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="unit-ov" id="unitOv">
+  <div class="unit-box">
+    <h3>Select Unit</h3>
+    <div class="unit-chips" id="unitChips"></div>
+    <div class="unit-add-row">
+      <input type="text" id="newUnitInp" placeholder="Add new unit..."/>
+      <button onclick="addUnit()">+ Add</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="confirmUnit()">Confirm</button>
+      <button class="btn btn-ghost" onclick="closeUnitModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -161,133 +437,505 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
+// Use the config from your photo
 const firebaseConfig = {
-    apiKey: "AIzaSyAsN2_FzgS0WC38Hf4a1k4fgMYvHuVTd5Q",
-    authDomain: "psapp-6a01d.firebaseapp.com",
-    projectId: "psapp-6a01d",
-    storageBucket: "psapp-6a01d.firebasestorage.app",
-    messagingSenderId: "180232235864",
-    appId: "1:180232235864:web:c57867b3a2164923dad32d"
+  apiKey: "AIzaSyAsN2_FzgS0WC38Hf4a1k4fgMYvHuVTd5Q",
+  authDomain: "psapp-6a01d.firebaseapp.com",
+  projectId: "psapp-6a01d",
+  storageBucket: "psapp-6a01d.firebasestorage.app",
+  messagingSenderId: "180232235864",
+  appId: "1:180232235864:web:c57867b3a2164923dad32d"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ═══════════════ STATE ═══════════════
 let transactions = JSON.parse(localStorage.getItem('txv2')||'[]');
-let stock = JSON.parse(localStorage.getItem('stockv2')||'[]');
-let currentDetailId = null;
-let filterCat = 'all';
+let stock        = JSON.parse(localStorage.getItem('stockv2')||'[]');
+let units        = JSON.parse(localStorage.getItem('units')||'["Kg","Ton","Bag","Piece","Litre","Meter","Box","Set","Day","Trip","Load"]');
+let names        = JSON.parse(localStorage.getItem('names')||'[]');
+let items        = JSON.parse(localStorage.getItem('items_db')||'[]');
 
+let currentCat = null;
+let currentRows = [];
+let unitRowIdx = null;
+let unitSelected = null;
+let currentDetailId = null;
+let expFilterCat = 'all';
+
+// UPDATED SAVE: Syncs Stock reductions to Cloud
 async function save() {
   localStorage.setItem('txv2', JSON.stringify(transactions));
   localStorage.setItem('stockv2', JSON.stringify(stock));
-  try { await db.collection("userdata").doc("ps_enterprise_data").set({ transactions, stock, lastUpdated: new Date().toISOString() }); } catch(e) {}
+  localStorage.setItem('units', JSON.stringify(units));
+  localStorage.setItem('names', JSON.stringify(names));
+  localStorage.setItem('items_db', JSON.stringify(items));
+
+  // Firebase Sync
+  try {
+    await db.collection("userdata").doc("ps_enterprise_data").set({
+      transactions: transactions,
+      stock: stock,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch(e) { console.error("Cloud Sync Error", e); }
 }
 
+// ═══════════════ SCREEN NAV ═══════════════
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goHome(){showScreen('home');renderHome();}
+function openExpense(){showScreen('expense');renderExpense();}
+function openStock(){showScreen('stock');renderStock();}
+function openAdd(){showScreen('add');initForm();}
+function closeAdd(){showScreen('expense');renderExpense();}
+
+// ═══════════════ HOME ═══════════════
+function renderHome(){
+  document.getElementById('homeDate').textContent =
+    new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  const gt = transactions.reduce((s,t)=>s+t.grandTotal,0);
+  document.getElementById('homeExpTotal').textContent = fmt(gt);
+  document.getElementById('homeExpCount').textContent = transactions.length+' transaction'+(transactions.length!==1?'s':'');
+  document.getElementById('homeStockCount').textContent = stock.length;
+  document.getElementById('homeStockSub').textContent = stock.length+' item'+(stock.length!==1?'s':'')+' tracked';
 }
 
-function goHome(){ showScreen('home'); renderHome(); }
-function openExpense(){ showScreen('expense'); renderExpense(); }
-function openStock(){ showScreen('stock'); renderStock(); }
-
-function renderHome(){
-  document.getElementById('homeDate').textContent = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
-  const gt = transactions.reduce((s,t)=>s+t.grandTotal,0);
-  document.getElementById('homeExpTotal').textContent = '₹' + gt.toLocaleString('en-IN');
-  document.getElementById('homeStockCount').textContent = stock.length;
+// ═══════════════ EXPENSE LIST ═══════════════
+function setExpFilter(cat, el){
+  expFilterCat = cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderExpense();
+}
+function clearFilters(){
+  document.getElementById('filterFrom').value='';
+  document.getElementById('filterTo').value='';
+  expFilterCat='all';
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.filter-chip').classList.add('active');
+  renderExpense();
 }
 
 function renderExpense(){
+  // Update category summary
+  ['Product','Labour','Transport','Loading'].forEach(c=>{
+    const arr = transactions.filter(t=>t.category===c);
+    const total = arr.reduce((s,t)=>s+t.grandTotal,0);
+    document.getElementById('cs'+c).textContent = fmt(total);
+    document.getElementById('cs'+c+'C').textContent = arr.length+' entr'+(arr.length===1?'y':'ies');
+  });
+
+  let list = [...transactions];
+  if(expFilterCat!=='all') list=list.filter(t=>t.category===expFilterCat);
+  const from = document.getElementById('filterFrom').value;
+  const to   = document.getElementById('filterTo').value;
+  if(from) list=list.filter(t=>t.date>=from);
+  if(to)   list=list.filter(t=>t.date<=to);
+  list.sort((a,b)=>b.id-a.id);
+
+  const total = list.reduce((s,t)=>s+t.grandTotal,0);
+  document.getElementById('filteredTotal').textContent=fmt(total);
+  document.getElementById('filteredCount').textContent=list.length+' record'+(list.length!==1?'s':'');
+
   const el = document.getElementById('expenseList');
-  let list = transactions;
-  if(filterCat !== 'all') list = transactions.filter(t => t.category === filterCat);
-  
-  // Category totals
-  document.getElementById('csProduct').textContent = '₹' + transactions.filter(t=>t.category==='Product').reduce((s,t)=>s+t.grandTotal,0).toLocaleString('en-IN');
-  document.getElementById('csLabour').textContent = '₹' + transactions.filter(t=>t.category==='Labour').reduce((s,t)=>s+t.grandTotal,0).toLocaleString('en-IN');
-
-  el.innerHTML = list.slice().reverse().map(tx=>`
+  if(!list.length){
+    el.innerHTML=`<div class="empty-state"><span class="ei">📭</span>No transactions found.</div>`;
+    return;
+  }
+  el.innerHTML=list.map(tx=>`
     <div class="tx-card" onclick="openDetail(${tx.id})">
-      <div style="display:flex; justify-content:space-between;">
-        <b>${tx.name}</b>
-        <span class="tx-total">₹${tx.grandTotal.toLocaleString('en-IN')}</span>
+      <div class="tx-card-top">
+        <span class="tx-id-badge">#${pad(tx.id)}</span>
+        <span class="tx-name">${tx.name||'—'}</span>
+        <span class="tx-total">${fmt(tx.grandTotal)}</span>
       </div>
-      <small style="color:var(--muted);">${tx.category} | ${tx.date}</small>
+      <div class="tx-card-meta">
+        <span class="cat-badge ${tx.category}">${tx.category}</span>
+        <span class="tx-date-sm">${fmtDate(tx.date)}</span>
+        <span class="tx-items-ct">${tx.items.length} item${tx.items.length!==1?'s':''}</span>
+      </div>
+      ${tx.note?`<div class="tx-note-sm">📝 ${tx.note}</div>`:''}
     </div>
   `).join('');
 }
 
-function setExpFilter(cat, btn){
-    filterCat = cat;
-    document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
-    btn.classList.add('active');
-    renderExpense();
-}
-
-function saveTransaction(){
-    const name = document.getElementById('txName').value;
-    const amount = parseFloat(document.getElementById('txAmount').value);
-    const cat = document.getElementById('txCat').value;
-    if(!name || !amount) return alert("Fill Name and Amount");
-    
-    const tx = { id: Date.now(), name, grandTotal: amount, category: cat, date: new Date().toISOString().split('T')[0] };
-    transactions.push(tx);
-    
-    if(cat === 'Product'){
-        let s = stock.find(i=>i.name === name);
-        if(!s) stock.push({name, qty: amount, unit: 'pcs'});
-        else s.qty += amount;
-    }
-    
-    save().then(()=>{
-        document.getElementById('txName').value='';
-        document.getElementById('txAmount').value='';
-        showScreen('expense');
-        renderExpense();
-    });
-}
-
-function renderStock(){
-  const el = document.getElementById('stockList');
-  el.innerHTML = stock.map((s, idx) => `
-    <div class="stock-card">
-      <div class="stock-hdr" onclick="toggleStock(${idx})">
-        <div><b>${s.name}</b></div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-weight:800; color:var(--green);">${s.qty}</span>
-            <button onclick="deleteStockItem(event, '${s.name}')" style="border:none; background:none; color:var(--red);">🗑️</button>
-        </div>
-      </div>
-      <div class="stock-body" id="sb${idx}">Unit: ${s.unit}</div>
-    </div>
-  `).join('');
-}
-
-function toggleStock(idx){ document.getElementById('sb'+idx).classList.toggle('open'); }
-
-async function deleteStockItem(event, name){
-  event.stopPropagation();
-  if(!confirm("Delete "+name+"?")) return;
-  stock = stock.filter(s=>s.name !== name);
-  await save(); renderStock();
-}
-
+// ═══════════════ DETAIL MODAL ═══════════════
 function openDetail(id){
   const tx = transactions.find(t=>t.id===id);
-  currentDetailId = id;
-  document.getElementById('detailTitle').textContent = tx.name;
-  document.getElementById('detailContent').innerHTML = `Total: ₹${tx.grandTotal.toLocaleString('en-IN')}<br>Category: ${tx.category}<br>Date: ${tx.date}`;
+  if(!tx) return;
+  currentDetailId=id;
+  document.getElementById('detailTitle').textContent=(tx.name||'—')+' — #'+pad(tx.id);
+  document.getElementById('detailMeta').innerHTML=`
+    <span><b>Date:</b> ${fmtDate(tx.date)}</span>
+    <span><b>Category:</b> ${tx.category}</span>
+    <span><b>Total:</b> ${fmt(tx.grandTotal)}</span>
+  `;
+  let headers=[],rows='',foot='';
+  if(tx.category==='Product'){
+    headers=['#','Item','Unit','Qty','Price','Total'];
+    rows=tx.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.item||'—'}</td><td>${it.unit||'—'}</td><td>${it.qty||0}</td><td>${fmt(it.price||0)}</td><td style="font-weight:700;">${fmt(it.total||0)}</td></tr>`).join('');
+    foot=`<td colspan="5" style="text-align:right;padding:8px 11px;">Grand Total</td><td style="padding:8px 11px;">${fmt(tx.grandTotal)}</td>`;
+  } else if(tx.category==='Labour'){
+    headers=['#','Item','Unit','Days','Persons','Price','Total'];
+    rows=tx.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.item||'—'}</td><td>${it.unit||'—'}</td><td>${it.days||0}</td><td>${it.persons||0}</td><td>${fmt(it.price||0)}</td><td style="font-weight:700;">${fmt(it.total||0)}</td></tr>`).join('');
+    foot=`<td colspan="6" style="text-align:right;padding:8px 11px;">Grand Total</td><td style="padding:8px 11px;">${fmt(tx.grandTotal)}</td>`;
+  } else {
+    headers=['#','Item','Qty','Price','Total'];
+    rows=tx.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.item||'—'}</td><td>${it.qty||0}</td><td>${fmt(it.price||0)}</td><td style="font-weight:700;">${fmt(it.total||0)}</td></tr>`).join('');
+    foot=`<td colspan="4" style="text-align:right;padding:8px 11px;">Grand Total</td><td style="padding:8px 11px;">${fmt(tx.grandTotal)}</td>`;
+  }
+  document.getElementById('detailThead').innerHTML=headers.map(h=>`<th>${h}</th>`).join('');
+  document.getElementById('detailTbody').innerHTML=rows;
+  document.getElementById('detailTfoot').innerHTML=foot;
+  document.getElementById('detailNote').textContent=tx.note?'📝 Note: '+tx.note:'';
   document.getElementById('detailModal').classList.add('open');
 }
+function closeDetail(){document.getElementById('detailModal').classList.remove('open');currentDetailId=null;}
 
-function closeDetail(){ document.getElementById('detailModal').classList.remove('open'); }
-
-async function deleteTx(){
-  transactions = transactions.filter(t=>t.id!==currentDetailId);
-  await save(); closeDetail(); renderExpense(); renderHome();
+async function deleteTx() {
+    if (!confirm("Are you sure you want to delete this from the Cloud?")) return;
+    const updatedTransactions = transactions.filter(t => t.id !== currentDetailId);
+    try {
+        await db.collection("userdata").doc("ps_enterprise_data").update({
+            transactions: updatedTransactions
+        });
+        transactions = updatedTransactions;
+        localStorage.setItem('txv2', JSON.stringify(transactions));
+        closeDetail();
+        renderHome();
+        renderExpense();
+        alert("✅ Deleted from Cloud Successfully!");
+    } catch (error) {
+        alert("❌ Error: Could not delete from database.");
+    }
 }
+
+// ═══════════════ PDF REPORT ═══════════════
+function savePDF(){
+  let list = [...transactions];
+  if(expFilterCat!=='all') list=list.filter(t=>t.category===expFilterCat);
+  const from=document.getElementById('filterFrom').value;
+  const to=document.getElementById('filterTo').value;
+  if(from) list=list.filter(t=>t.date>=from);
+  if(to)   list=list.filter(t=>t.date<=to);
+  list.sort((a,b)=>b.id-a.id);
+
+  const total=list.reduce((s,t)=>s+t.grandTotal,0);
+  const title=`Expense Report${expFilterCat!=='all'?' — '+expFilterCat:''}${from||to?' ('+([from?'From '+fmtDate(from):'',to?'To '+fmtDate(to):''].filter(Boolean).join(', '))+')':''}`;
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${title}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px;}
+    h1{font-size:18px;margin-bottom:4px;}
+    .sub{color:#666;font-size:11px;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:18px;}
+    th{background:#f3f4f6;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;border:1px solid #e5e7eb;}
+    td{padding:7px 10px;border:1px solid #e5e7eb;font-size:11px;}
+    .tx-block{margin-bottom:18px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;}
+    .tx-block-hdr{background:#f9fafb;padding:8px 12px;display:flex;gap:16px;align-items:center;border-bottom:1px solid #e5e7eb;}
+    .tx-id{font-weight:700;color:#1a56db;}
+    .grand-total-row{background:#111;color:#fff;padding:10px 14px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  </style></head><body>
+  <h1>${title}</h1>
+  <div class="sub">Generated: ${new Date().toLocaleString('en-IN')}</div>
+  <div class="grand-total-row"><span>Total Amount</span><span style="font-size:18px;font-weight:700;">${fmt(total)}</span></div>
+  ${list.map(tx=>{
+    let iheaders=[],irows='',ifoot='';
+    if(tx.category==='Product'){
+      iheaders=['Item','Unit','Qty','Price','Total'];
+      irows=tx.items.map(it=>`<tr><td>${it.item||'—'}</td><td>${it.unit||'—'}</td><td>${it.qty||0}</td><td>${fmt(it.price||0)}</td><td>${fmt(it.total||0)}</td></tr>`).join('');
+      ifoot=`<tr><td colspan="4" style="text-align:right;">Total</td><td>${fmt(tx.grandTotal)}</td></tr>`;
+    } else if(tx.category==='Labour'){
+      iheaders=['Item','Unit','Days','Persons','Price','Total'];
+      irows=tx.items.map(it=>`<tr><td>${it.item||'—'}</td><td>${it.unit||'—'}</td><td>${it.days||0}</td><td>${it.persons||0}</td><td>${fmt(it.price||0)}</td><td>${fmt(it.total||0)}</td></tr>`).join('');
+      ifoot=`<tr><td colspan="5" style="text-align:right;">Total</td><td>${fmt(tx.grandTotal)}</td></tr>`;
+    } else {
+      iheaders=['Item','Qty','Price','Total'];
+      irows=tx.items.map(it=>`<tr><td>${it.item||'—'}</td><td>${it.qty||0}</td><td>${fmt(it.price||0)}</td><td>${fmt(it.total||0)}</td></tr>`).join('');
+      ifoot=`<tr><td colspan="3" style="text-align:right;">Total</td><td>${fmt(tx.grandTotal)}</td></tr>`;
+    }
+    return `<div class="tx-block">
+      <div class="tx-block-hdr">
+        <span class="tx-id">#${pad(tx.id)}</span>
+        <span><b>${tx.name||'—'}</b></span>
+        <span style="color:#888;">${fmtDate(tx.date)}</span>
+        <span style="background:#e5e7eb;padding:2px 8px;border-radius:10px;font-size:10px;">${tx.category}</span>
+        <span style="margin-left:auto; font-weight:700;">${fmt(tx.grandTotal)}</span>
+      </div>
+      <table><thead><tr>${iheaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+      <tbody>${irows}</tbody><tfoot>${ifoot}</tfoot></table>
+    </div>`;
+  }).join('')}
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+function saveStockPDF(){
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Stock Report</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;margin:24px;}h1{font-size:18px;margin-bottom:4px;}table{width:100%;border-collapse:collapse;}th{background:#f3f4f6;padding:7px 10px;text-align:left;border:1px solid #e5e7eb;}td{padding:7px 10px;border:1px solid #e5e7eb;}</style>
+  </head><body>
+  <h1>Stock Report</h1>
+  <div style="margin-bottom:16px;">Generated: ${new Date().toLocaleString('en-IN')}</div>
+  <table><thead><tr><th>#</th><th>Item</th><th>Unit</th><th>Current Stock</th><th>Status</th></tr></thead><tbody>
+  ${stock.map((s,i)=>`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.unit||'—'}</td><td>${s.qty}</td><td>${s.qty<=0?'⚠️ Out':'✅ In Stock'}</td></tr>`).join('')}
+  </tbody></table>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+// ═══════════════ ADD FORM ═══════════════
+function initForm(){
+  const nextId = transactions.length>0 ? Math.max(...transactions.map(t=>t.id))+1 : 1;
+  document.getElementById('txId').value='#'+pad(nextId);
+  if(!document.getElementById('txDate').value) document.getElementById('txDate').valueAsDate=new Date();
+  document.getElementById('namesList').innerHTML=names.map(n=>`<option value="${n}"/>`).join('');
+  currentCat=null; currentRows=[];
+  document.querySelectorAll('.cat-opt').forEach(o=>o.className='cat-opt');
+  document.getElementById('itemsSection').style.display='none';
+  document.getElementById('grandTotalDisp').textContent='₹0.00';
+  document.getElementById('itemRowsBody').innerHTML='';
+}
+
+function selectCat(cat,el){
+  currentCat=cat; currentRows=[];
+  document.querySelectorAll('.cat-opt').forEach(o=>o.className='cat-opt');
+  el.classList.add('selected',cat);
+  buildHeader();
+  document.getElementById('itemRowsBody').innerHTML='';
+  document.getElementById('itemsSection').style.display='block';
+  addItemRow();
+}
+
+function buildHeader(){
+  const h=document.getElementById('itemHdr');
+  if(currentCat==='Product'){h.className='item-row-hdr pr';h.innerHTML='<span>Item</span><span>Unit</span><span>Qty</span><span>Price</span><span>Total</span><span></span>';}
+  else if(currentCat==='Labour'){h.className='item-row-hdr la';h.innerHTML='<span>Item</span><span>Unit</span><span>Days</span><span>Persons</span><span>Price</span><span>Total</span><span></span>';}
+  else{h.className='item-row-hdr tr';h.innerHTML='<span>Item</span><span>Qty</span><span>Price</span><span>Total</span><span></span>';}
+}
+
+function addItemRow(){
+  currentRows.push({id:Date.now()+Math.random(),item:'',unit:'',qty:0,days:0,persons:0,price:0,total:0});
+  renderRows();
+}
+
+function renderRows(){
+  const body=document.getElementById('itemRowsBody');
+  body.innerHTML='';
+  currentRows.forEach((row,idx)=>{
+    const div=document.createElement('div');
+    const itOpts=items.map(i=>`<option value="${i}"/>`).join('');
+    if(currentCat==='Product'){
+      div.className='item-row pr';
+      div.innerHTML=`
+        <div><input type="text" list="il${idx}" placeholder="Item" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div><button type="button" class="unit-pick-btn" onclick="openUnit(${idx})">${row.unit||'Unit ▾'}</button></div>
+        <div><input type="number" min="0" step="0.01" placeholder="0" value="${row.qty||''}" oninput="upd(${idx},'qty',+this.value)"/></div>
+        <div><input type="number" min="0" step="0.01" placeholder="0" value="${row.price||''}" oninput="upd(${idx},'price',+this.value)"/></div>
+        <div class="row-total" id="rt${idx}">${fmt(row.total)}</div>
+        <button class="del-row" onclick="delRow(${idx})">✕</button>`;
+    } else if(currentCat==='Labour'){
+      div.className='item-row la';
+      div.innerHTML=`
+        <div><input type="text" list="il${idx}" placeholder="Work" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div><button type="button" class="unit-pick-btn" onclick="openUnit(${idx})">${row.unit||'Unit ▾'}</button></div>
+        <div><input type="number" min="0" step="0.5" placeholder="Days" value="${row.days||''}" oninput="upd(${idx},'days',+this.value)"/></div>
+        <div><input type="number" min="0" step="1" placeholder="Persons" value="${row.persons||''}" oninput="upd(${idx},'persons',+this.value)"/></div>
+        <div><input type="number" min="0" step="0.01" placeholder="Price" value="${row.price||''}" oninput="upd(${idx},'price',+this.value)"/></div>
+        <div class="row-total" id="rt${idx}">${fmt(row.total)}</div>
+        <button class="del-row" onclick="delRow(${idx})">✕</button>`;
+    } else {
+      div.className='item-row tr';
+      div.innerHTML=`
+        <div><input type="text" list="il${idx}" placeholder="Description" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div><input type="number" min="0" step="0.01" placeholder="Qty" value="${row.qty||''}" oninput="upd(${idx},'qty',+this.value)"/></div>
+        <div><input type="number" min="0" step="0.01" placeholder="Price" value="${row.price||''}" oninput="upd(${idx},'price',+this.value)"/></div>
+        <div class="row-total" id="rt${idx}">${fmt(row.total)}</div>
+        <button class="del-row" onclick="delRow(${idx})">✕</button>`;
+    }
+    body.appendChild(div);
+  });
+  calcGrand();
+}
+
+function upd(idx,field,val){
+  currentRows[idx][field]=val;
+  const r=currentRows[idx];
+  if(currentCat==='Labour') r.total=(r.days||0)*(r.persons||0)*(r.price||0);
+  else r.total=(r.qty||0)*(r.price||0);
+  const el=document.getElementById('rt'+idx);
+  if(el) el.textContent=fmt(r.total);
+  calcGrand();
+}
+
+function delRow(idx){
+  if(currentRows.length<=1){alert('Need at least one item');return;}
+  currentRows.splice(idx,1); renderRows();
+}
+
+function calcGrand(){
+  const t=currentRows.reduce((s,r)=>s+(r.total||0),0);
+  document.getElementById('grandTotalDisp').textContent=fmt(t);
+}
+
+// ═══════════════ UNIT MODAL ═══════════════
+function openUnit(idx){
+  unitRowIdx=idx; unitSelected=currentRows[idx].unit||null;
+  renderUnitChips();
+  document.getElementById('unitOv').classList.add('open');
+}
+function renderUnitChips(){
+  document.getElementById('unitChips').innerHTML=units.map(u=>`
+    <div class="uchip ${unitSelected===u?'sel':''}" onclick="pickUnit('${u}',this)">${u}</div>`).join('');
+}
+function pickUnit(u,el){
+  unitSelected=u;
+  document.querySelectorAll('.uchip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function addUnit(){
+  const v=document.getElementById('newUnitInp').value.trim();
+  if(!v) return;
+  if(!units.includes(v)){units.push(v);save();}
+  unitSelected=v;
+  document.getElementById('newUnitInp').value='';
+  renderUnitChips();
+}
+function confirmUnit(){
+  if(!unitSelected){alert('Select a unit');return;}
+  currentRows[unitRowIdx].unit=unitSelected;
+  closeUnitModal(); renderRows();
+}
+function closeUnitModal(){document.getElementById('unitOv').classList.remove('open');}
+
+// ═══════════════ SAVE TRANSACTION ═══════════════
+function saveTransaction(){
+  const name=document.getElementById('txName').value.trim();
+  const date=document.getElementById('txDate').value;
+  const note=document.getElementById('txNote').value.trim();
+  if(!name){alert('Enter Name');return;}
+  if(!date){alert('Select Date');return;}
+  if(!currentCat){alert('Select Category');return;}
+  if(!currentRows.length){alert('Add at least one item');return;}
+  for(let r of currentRows){if(!r.item){alert('Fill all item names');return;}}
+
+  const nextId=transactions.length>0?Math.max(...transactions.map(t=>t.id))+1:1;
+  const grandTotal=currentRows.reduce((s,r)=>s+(r.total||0),0);
+  const tx={id:nextId,name,date,note,category:currentCat,items:currentRows.map(r=>({...r})),grandTotal,createdAt:Date.now()};
+  transactions.push(tx);
+
+  if(!names.includes(name)) names.push(name);
+  currentRows.forEach(r=>{if(r.item&&!items.includes(r.item)) items.push(r.item);});
+
+  // Stock
+  if(currentCat==='Product'){
+    currentRows.forEach(r=>{
+      if(!r.item) return;
+      const key=r.item+'|'+(r.unit||'');
+      let s=stock.find(s=>s.key===key);
+      if(!s){s={key,name:r.item,unit:r.unit||'',qty:0,usageLog:[]};stock.push(s);}
+      s.qty+=(r.qty||0);
+      s.usageLog.push({type:'in',qty:r.qty||0,date,note:'Tx #'+pad(nextId)});
+    });
+  }
+  save();
+
+  // Reset UI
+  document.getElementById('txName').value='';
+  document.getElementById('txNote').value='';
+  showScreen('expense'); renderExpense(); renderHome();
+  alert('✅ Transaction #'+pad(nextId)+' saved!');
+}
+
+function resetForm(){
+  if(!confirm('Clear form?')) return;
+  initForm();
+}
+
+// ═══════════════ STOCK ═══════════════
+function renderStock(){
+  const el=document.getElementById('stockList');
+  const sb=document.getElementById('stockSummaryBar');
+  
+  if(!stock.length){
+    el.innerHTML=`<div class="empty-state"><span class="ei">📦</span>No stock yet.<br>Add a Product expense to populate stock.</div>`;
+    sb.innerHTML='';return;
+  }
+
+  // Summary Bar
+  sb.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <span style="background:#fff;border:1px solid #e2e5eb;border-radius:20px;padding:5px 14px;font-size:0.78rem;"><b>${stock.length}</b> items</span>
+    <span style="background:#def7ec;border:1px solid #6ee7b7;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:#057a55;"><b>${stock.filter(s=>s.qty>0).length}</b> in stock</span>
+  </div>`;
+
+  el.innerHTML=stock.map((s,idx)=>`
+    <div class="stock-card">
+      <div class="stock-hdr" onclick="toggleStock(${idx})">
+        <div style="flex:1;">
+          <div class="stock-name">${s.name}</div>
+          <div class="stock-unit">Unit: ${s.unit||'—'}</div>
+        </div>
+        <div style="text-align:right; margin-right:15px;">
+          <div class="stock-qty ${s.qty<=0?'low':''}">${s.qty.toFixed(2)} ${s.unit||''}</div>
+        </div>
+        <button onclick="deleteStockItem(event, '${s.name}')" style="background:none; border:none; color:#ff4d4d; font-size:1.2rem; cursor:pointer;">🗑️</button>
+      </div>
+      <div class="stock-body" id="sb${idx}">
+        <div class="use-form">
+            <div><label>Qty Used</label><input type="number" id="uq${idx}" min="0" step="0.01" placeholder="0"/></div>
+            <div><label>Note</label><input type="text" id="un${idx}" placeholder="Used for..."/></div>
+            <button class="btn btn-danger btn-sm" onclick="recordUsage(${idx})" style="align-self:flex-end;">Use</button>
+        </div>
+        <div style="font-size:0.72rem;font-weight:700;margin:10px 0 5px;">Usage Log</div>
+        <div style="max-height:100px; overflow-y:auto;">
+            ${(s.usageLog||[]).slice().reverse().map(l=>`
+              <div class="use-log-item">
+                <span>${l.note||'—'} <small>${l.date}</small></span>
+                <span class="${l.type==='in'?'log-in':'log-out'}">${l.type==='in'?'+':'-'}${l.qty}</span>
+              </div>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleStock(idx){
+  document.getElementById('sb'+idx).classList.toggle('open');
+}
+
+function recordUsage(idx){
+  const qty = parseFloat(document.getElementById('uq'+idx).value)||0;
+  const note = document.getElementById('un'+idx).value.trim();
+  if(!qty) return;
+  stock[idx].qty = parseFloat((stock[idx].qty - qty).toFixed(2));
+  stock[idx].usageLog.push({type:'out',qty,date:new Date().toISOString().split('T')[0],note:note||'Used'});
+  save(); renderStock(); renderHome();
+}
+
+async function deleteStockItem(event, itemName) {
+    event.stopPropagation(); 
+    if (!confirm(`Permanently remove "${itemName}" from PS Enterprises stock?`)) return;
+    stock = stock.filter(s => s.name !== itemName);
+    try {
+        await db.collection("userdata").doc("ps_enterprise_data").update({ stock: stock });
+        renderStock(); renderHome();
+        alert("✅ Item removed from Cloud");
+    } catch (e) { alert("❌ Error syncing deletion."); }
+}
+
+// ═══════════════ UTILS ═══════════════
+function fmt(n){if(isNaN(n))n=0;return '₹'+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function pad(n){return String(n).padStart(4,'0');}
+function fmtDate(d){if(!d)return '—';const[y,m,day]=d.split('-');return day+'/'+m+'/'+y;}
+
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
+document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
 
 renderHome();
 </script>
