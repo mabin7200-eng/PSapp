@@ -885,9 +885,10 @@ function renderStock(){
         <div style="text-align:right; margin-right:15px;">
           <div class="stock-qty ${s.qty<=0?'low':''}">${s.qty.toFixed(2)} ${s.unit||''}</div>
         </div>
-       <button onclick="deleteStockItem(event, ${idx})" 
-        style="background:none; border:none; z-index:10; cursor:pointer; padding:10px;">
-    <img src="🗑️ " style="width:24px; pointer-events:auto;">
+      
+<button onclick="event.stopPropagation(); deleteStockItem(${idx})" 
+        style="background:none; border:none; font-size:1.5rem; cursor:pointer; padding:5px; margin-left:10px;">
+    🗑️
 </button>
       </div>
       <div class="stock-body" id="sb${idx}">
@@ -922,27 +923,24 @@ function recordUsage(idx){
 }
 
 // Add this to your script area
-async function deleteStockItem(event, index) {
-    // This is the MOST IMPORTANT line. It stops the card from opening.
-    event.stopPropagation(); 
+async function deleteStockItem(index) {
+  const itemName = stock[index].name;
+  if (!confirm(`Permanently remove "${itemName}"?`)) return;
 
-    const itemName = stock[index].name;
-    if (!confirm(`Permanently remove ${itemName}?`)) return;
+  // Remove locally
+  stock.splice(index, 1);
 
-    // Create new list without the item
-    const newStock = stock.filter((_, i) => i !== index);
-
-    try {
-        await db.collection("userdata").doc("ps_enterprise_data").update({
-            stock: newStock
-        });
-        stock = newStock;
-        renderStock(); // Refresh the list
-    } catch (e) {
-        alert("Error: " + e.message);
-    }
+  // Sync to Cloud
+  try {
+    await db.collection("userdata").doc("ps_enterprise_data").update({
+      stock: stock
+    });
+    renderStock(); // Refresh screen
+    alert("✅ Deleted from Cloud");
+  } catch (e) {
+    alert("❌ Error: " + e.message);
+  }
 }
-
 // ═══════════════ UTILS ═══════════════
 function fmt(n){if(isNaN(n))n=0;return '₹'+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function pad(n){return String(n).padStart(4,'0');}
