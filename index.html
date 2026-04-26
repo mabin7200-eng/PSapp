@@ -978,24 +978,37 @@ renderHome();
 
   // --- DELETE FUNCTION ---
 async function deleteTx() {
-  if (!confirm('Are you sure you want to delete this transaction from Cloud and Phone?')) return;
+  if (!confirm('Permanently delete from Cloud?')) return;
 
-  transactions = transactions.filter(t => t.id !== currentDetailId);
-
-  try {
-    await db.collection("userdata").doc("ps_enterprise_data").set({
-      transactions: transactions,
-      stock: stock,
-      lastUpdated: new Date().toISOString()
-    });
+  // 1. Find the item we want to delete
+  const itemToDelete = transactions.find(t => t.id === currentDetailId);
+  
+  if (itemToDelete) {
+    // 2. If it was a 'Sale', give the stock back! 
+    // (e.g., if you delete a sale of 500 bricks, the stock should go back UP)
+    if (itemToDelete.type === 'sale') {
+      const product = stock.find(s => s.name === itemToDelete.category);
+      if (product) product.qty += parseInt(itemToDelete.amount);
+    }
     
-    closeDetail();
-    renderExpense();
-    renderHome();
-    alert('✅ Deleted successfully from Cloud!');
-  } catch (error) {
-    console.error("Error deleting from Cloud: ", error);
-    alert('❌ Cloud delete failed, but removed from phone.');
+    // 3. Remove from the local list
+    transactions = transactions.filter(t => t.id !== currentDetailId);
+
+    // 4. Force save to Firebase Cloud immediately
+    try {
+      await db.collection("userdata").doc("ps_enterprise_data").set({
+        transactions: transactions,
+        stock: stock,
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // 5. Update the Screen
+      closeDetail(); 
+      renderHome(); // Refresh the main dashboard
+      alert("✅ Deleted and Stock Updated!");
+    } catch (e) {
+      alert("Cloud Error: " + e.message);
+    }
   }
 }
 </script>
