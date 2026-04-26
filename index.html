@@ -22,12 +22,14 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;min-height:100vh;}
+
 .screen{display:none;min-height:100vh;padding-bottom:90px;}
 .screen.active{display:block;}
+
 .topbar{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-back{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
 .topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;flex:1;}
-.topbar-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:7px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+
 .home-header{background:linear-gradient(135deg,var(--accent) 0%,#2563eb 100%);color:#fff;padding:22px 18px 18px;display:flex;align-items:center;gap:14px;}
 .home-logo{width:46px;height:46px;background:rgba(255,255,255,0.18);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;border:2px solid rgba(255,255,255,0.3);}
 .home-cards{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -35,24 +37,34 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .home-card.expense-card{background:linear-gradient(135deg,#fff1f2,#fde8e8);border-color:#fca5a5;}
 .home-card.stock-card{background:linear-gradient(135deg,#f0fdf4,#def7ec);border-color:#6ee7b7;}
 .home-card-amount{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;}
+
 .exp-cat-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px 16px 0;}
-.cat-sum-card{background:var(--surface);border-radius:10px;padding:11px 14px;box-shadow:var(--shadow);border-left:4px solid var(--accent);}
+.cat-sum-card{background:var(--surface);border-radius:10px;padding:11px 14px;box-shadow:var(--shadow);border-left:4px solid transparent;}
+.cat-sum-card.Product{border-color:var(--green);}
+.cat-sum-card.Labour{border-color:var(--purple);}
+
 .filter-panel{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;}
-.filter-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.73rem;cursor:pointer;}
-.filter-chip.active{background:var(--accent);color:#fff;}
-.tx-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);cursor:pointer;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.filter-chip{background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:0.73rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;}
+.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+.tx-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:10px;cursor:pointer;border:1px solid var(--border);}
 .tx-total{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--red);}
-.fab{position:fixed;bottom:24px;right:18px;background:var(--accent);color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:1.6rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(0,0,0,0.2);z-index:90;}
+
+.fab{position:fixed;bottom:24px;right:18px;z-index:90;background:var(--accent);color:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 18px rgba(26,86,219,0.4);display:flex;align-items:center;justify-content:center;}
+
+.add-wrap{padding:16px;}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px;}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:10px;outline:none;}
+
 .stock-card{background:#fff;margin-bottom:10px;border-radius:12px;border:1px solid #e2e5eb;overflow:hidden;}
 .stock-hdr{padding:15px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
 .stock-body{display:none;padding:15px;background:#f9fafb;border-top:1px solid #eee;}
 .stock-body.open{display:block;}
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;z-index:1000;padding:20px;}
-.modal-ov.open{display:flex;align-items:center;justify-content:center;}
-.modal-box{background:#fff;border-radius:15px;width:100%;max-width:500px;padding:20px;}
-.btn{padding:10px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;}
-.btn-danger{background:var(--red);color:#fff;}
-.btn-success{background:var(--green);color:#fff;}
+
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-ov.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:14px;width:100%;max-width:500px;padding:20px;}
 </style>
 </head>
 <body>
@@ -61,17 +73,17 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
   <div class="home-header">
     <div class="home-logo">PS</div>
     <div class="home-header-text">
-      <div class="home-date" id="homeDate"></div>
-      <div class="home-title">Tap a section to open</div>
+      <div id="homeDate" style="font-size:0.68rem; opacity:0.7; text-transform:uppercase; letter-spacing:1px;"></div>
+      <div style="font-family:'Barlow Condensed'; font-weight:700;">PS Enterprises Manager</div>
     </div>
   </div>
   <div class="home-cards">
     <div class="home-card expense-card" onclick="openExpense()">
-      <div style="font-size:0.7rem; color:var(--muted); font-weight:700;">EXPENSES</div>
+      <div style="font-size:0.7rem; font-weight:700; color:var(--muted);">TOTAL EXPENSES</div>
       <div class="home-card-amount" id="homeExpTotal">₹0</div>
     </div>
     <div class="home-card stock-card" onclick="openStock()">
-      <div style="font-size:0.7rem; color:var(--muted); font-weight:700;">STOCK ITEMS</div>
+      <div style="font-size:0.7rem; font-weight:700; color:var(--muted);">STOCK ITEMS</div>
       <div class="home-card-amount" id="homeStockCount">0</div>
     </div>
   </div>
@@ -82,26 +94,65 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Expenses</span>
   </div>
-  <div class="exp-cat-summary" id="catSum"></div>
+  <div class="exp-cat-summary">
+    <div class="cat-sum-card Product">
+      <div style="font-size:0.6rem; font-weight:700; color:var(--muted);">PRODUCT</div>
+      <div id="csProduct" style="font-weight:800; font-family:'Barlow Condensed';">₹0</div>
+    </div>
+    <div class="cat-sum-card Labour">
+      <div style="font-size:0.6rem; font-weight:700; color:var(--muted);">LABOUR</div>
+      <div id="csLabour" style="font-weight:800; font-family:'Barlow Condensed';">₹0</div>
+    </div>
+  </div>
+  <div class="filter-panel">
+      <div class="filter-row">
+          <div class="filter-chip active" onclick="setExpFilter('all',this)">All</div>
+          <div class="filter-chip" onclick="setExpFilter('Product',this)">Product</div>
+          <div class="filter-chip" onclick="setExpFilter('Labour',this)">Labour</div>
+      </div>
+  </div>
   <div id="expenseList" style="padding:16px;"></div>
   <button class="fab" onclick="showScreen('add')">+</button>
+</div>
+
+<div class="screen" id="screen-add">
+  <div class="topbar">
+    <button class="topbar-back" onclick="showScreen('expense')">‹</button>
+    <span class="topbar-title">New Entry</span>
+  </div>
+  <div class="add-wrap">
+    <div class="card">
+      <label style="font-size:0.7rem; font-weight:700;">PARTY NAME</label>
+      <input type="text" id="txName" placeholder="Enter name">
+      <label style="font-size:0.7rem; font-weight:700;">AMOUNT (₹)</label>
+      <input type="number" id="txAmount" placeholder="0.00">
+      <label style="font-size:0.7rem; font-weight:700;">CATEGORY</label>
+      <select id="txCat">
+        <option value="Product">Product</option>
+        <option value="Labour">Labour</option>
+        <option value="Transport">Transport</option>
+        <option value="Loading">Loading</option>
+      </select>
+      <button onclick="saveTransaction()" style="width:100%; background:var(--accent); color:#fff; padding:12px; border:none; border-radius:8px; font-weight:700; margin-top:10px;">SAVE TRANSACTION</button>
+    </div>
+  </div>
 </div>
 
 <div class="screen" id="screen-stock">
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
-    <span class="topbar-title">Inventory</span>
+    <span class="topbar-title">Stock</span>
   </div>
   <div id="stockList" style="padding:16px;"></div>
 </div>
 
 <div class="modal-ov" id="detailModal">
   <div class="modal-box">
-    <h2 id="detailTitle" style="font-family:'Barlow Condensed';">Details</h2>
-    <div id="detailContent" style="margin:20px 0;"></div>
+    <h2 id="detailTitle" style="font-family:'Barlow Condensed';">Detail</h2>
+    <div id="detailContent" style="margin:15px 0; font-size:0.9rem;"></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button class="btn btn-danger" onclick="deleteTx()">Delete</button>
-        <button class="btn" onclick="closeDetail()">Close</button>
+        <button onclick="deleteTx()" style="background:var(--red); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700;">DELETE</button>
+        <button onclick="closeDetail()" style="background:var(--surface2); border:1px solid var(--border); padding:10px; border-radius:8px; font-weight:700;">CLOSE</button>
     </div>
   </div>
 </div>
@@ -124,15 +175,12 @@ const db = firebase.firestore();
 let transactions = JSON.parse(localStorage.getItem('txv2')||'[]');
 let stock = JSON.parse(localStorage.getItem('stockv2')||'[]');
 let currentDetailId = null;
+let filterCat = 'all';
 
 async function save() {
   localStorage.setItem('txv2', JSON.stringify(transactions));
   localStorage.setItem('stockv2', JSON.stringify(stock));
-  try {
-    await db.collection("userdata").doc("ps_enterprise_data").set({
-      transactions, stock, lastUpdated: new Date().toISOString()
-    });
-  } catch(e) { console.error(e); }
+  try { await db.collection("userdata").doc("ps_enterprise_data").set({ transactions, stock, lastUpdated: new Date().toISOString() }); } catch(e) {}
 }
 
 function showScreen(id){
@@ -145,7 +193,7 @@ function openExpense(){ showScreen('expense'); renderExpense(); }
 function openStock(){ showScreen('stock'); renderStock(); }
 
 function renderHome(){
-  document.getElementById('homeDate').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('homeDate').textContent = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
   const gt = transactions.reduce((s,t)=>s+t.grandTotal,0);
   document.getElementById('homeExpTotal').textContent = '₹' + gt.toLocaleString('en-IN');
   document.getElementById('homeStockCount').textContent = stock.length;
@@ -153,76 +201,92 @@ function renderHome(){
 
 function renderExpense(){
   const el = document.getElementById('expenseList');
-  if(!transactions.length) { el.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">No transactions.</div>'; return; }
-  el.innerHTML = transactions.slice().reverse().map(tx=>`
+  let list = transactions;
+  if(filterCat !== 'all') list = transactions.filter(t => t.category === filterCat);
+  
+  // Category totals
+  document.getElementById('csProduct').textContent = '₹' + transactions.filter(t=>t.category==='Product').reduce((s,t)=>s+t.grandTotal,0).toLocaleString('en-IN');
+  document.getElementById('csLabour').textContent = '₹' + transactions.filter(t=>t.category==='Labour').reduce((s,t)=>s+t.grandTotal,0).toLocaleString('en-IN');
+
+  el.innerHTML = list.slice().reverse().map(tx=>`
     <div class="tx-card" onclick="openDetail(${tx.id})">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b>${tx.name}</b>
-          <span class="tx-total">₹${tx.grandTotal.toLocaleString('en-IN')}</span>
+      <div style="display:flex; justify-content:space-between;">
+        <b>${tx.name}</b>
+        <span class="tx-total">₹${tx.grandTotal.toLocaleString('en-IN')}</span>
       </div>
       <small style="color:var(--muted);">${tx.category} | ${tx.date}</small>
     </div>
   `).join('');
 }
 
+function setExpFilter(cat, btn){
+    filterCat = cat;
+    document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    renderExpense();
+}
+
+function saveTransaction(){
+    const name = document.getElementById('txName').value;
+    const amount = parseFloat(document.getElementById('txAmount').value);
+    const cat = document.getElementById('txCat').value;
+    if(!name || !amount) return alert("Fill Name and Amount");
+    
+    const tx = { id: Date.now(), name, grandTotal: amount, category: cat, date: new Date().toISOString().split('T')[0] };
+    transactions.push(tx);
+    
+    if(cat === 'Product'){
+        let s = stock.find(i=>i.name === name);
+        if(!s) stock.push({name, qty: amount, unit: 'pcs'});
+        else s.qty += amount;
+    }
+    
+    save().then(()=>{
+        document.getElementById('txName').value='';
+        document.getElementById('txAmount').value='';
+        showScreen('expense');
+        renderExpense();
+    });
+}
+
 function renderStock(){
   const el = document.getElementById('stockList');
-  if(!stock.length) { el.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">No stock items.</div>'; return; }
   el.innerHTML = stock.map((s, idx) => `
     <div class="stock-card">
       <div class="stock-hdr" onclick="toggleStock(${idx})">
-        <div style="flex:1;">
-          <div class="stock-name" style="font-weight:700;">${s.name}</div>
-          <div style="font-size:0.75rem; color:var(--muted);">Unit: ${s.unit || '—'}</div>
+        <div><b>${s.name}</b></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-weight:800; color:var(--green);">${s.qty}</span>
+            <button onclick="deleteStockItem(event, '${s.name}')" style="border:none; background:none; color:var(--red);">🗑️</button>
         </div>
-        <div style="text-align:right; margin-right:15px;">
-           <div style="font-family:'Barlow Condensed'; font-size:1.2rem; font-weight:800; color:var(--green);">${s.qty}</div>
-        </div>
-        <button onclick="deleteStockItem(event, '${s.name}')" style="border:none; background:none; color:var(--red); font-size:1.2rem; padding:5px;">🗑️</button>
       </div>
-      <div class="stock-body" id="sb${idx}">
-         <div style="font-size:0.8rem; color:var(--muted);">Stock ID: ${s.key || idx}</div>
-      </div>
+      <div class="stock-body" id="sb${idx}">Unit: ${s.unit}</div>
     </div>
   `).join('');
 }
 
-function toggleStock(idx){
-  document.getElementById('sb'+idx).classList.toggle('open');
-}
+function toggleStock(idx){ document.getElementById('sb'+idx).classList.toggle('open'); }
 
 async function deleteStockItem(event, name){
   event.stopPropagation();
-  if(!confirm("Permanently delete " + name + " from PS Enterprises stock?")) return;
-  stock = stock.filter(s => s.name !== name);
-  await save();
-  renderStock();
-  renderHome();
+  if(!confirm("Delete "+name+"?")) return;
+  stock = stock.filter(s=>s.name !== name);
+  await save(); renderStock();
 }
 
 function openDetail(id){
   const tx = transactions.find(t=>t.id===id);
   currentDetailId = id;
   document.getElementById('detailTitle').textContent = tx.name;
-  document.getElementById('detailContent').innerHTML = `
-    <div style="background:var(--surface2); padding:15px; border-radius:10px;">
-        <p><b>Total:</b> ₹${tx.grandTotal.toLocaleString('en-IN')}</p>
-        <p><b>Category:</b> ${tx.category}</p>
-        <p><b>Date:</b> ${tx.date}</p>
-    </div>
-  `;
+  document.getElementById('detailContent').innerHTML = `Total: ₹${tx.grandTotal.toLocaleString('en-IN')}<br>Category: ${tx.category}<br>Date: ${tx.date}`;
   document.getElementById('detailModal').classList.add('open');
 }
 
 function closeDetail(){ document.getElementById('detailModal').classList.remove('open'); }
 
 async function deleteTx(){
-  if(!confirm("Delete this transaction?")) return;
   transactions = transactions.filter(t=>t.id!==currentDetailId);
-  await save();
-  closeDetail();
-  renderExpense();
-  renderHome();
+  await save(); closeDetail(); renderExpense(); renderHome();
 }
 
 renderHome();
