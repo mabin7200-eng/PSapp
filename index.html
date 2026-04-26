@@ -966,6 +966,31 @@ renderHome();
       stock: stock
     });
   }
+  // --- NEW DELETE FUNCTION ---
+async function deleteTx() {
+  if (!confirm('Are you sure you want to delete this transaction from Cloud and Phone?')) return;
+
+  // 1. Remove it from your local list
+  transactions = transactions.filter(t => t.id !== currentDetailId);
+
+  // 2. Sync the change to Firebase (Overwrites the cloud with the new shorter list)
+  try {
+    await db.collection("userdata").doc("ps_enterprise_data").set({
+      transactions: transactions,
+      stock: stock,
+      lastUpdated: new Date().toISOString()
+    });
+    
+    // 3. Update the Screen
+    closeDetail();
+    renderExpense();
+    renderHome();
+    alert('✅ Deleted successfully from Cloud!');
+  } catch (error) {
+    console.error("Error deleting from Cloud: ", error);
+    alert('❌ Cloud delete failed, but removed from phone.');
+  }
+}
 </script>
 </body>
 </html>
