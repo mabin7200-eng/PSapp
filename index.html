@@ -941,5 +941,31 @@ document.getElementById('unitOv').addEventListener('click',function(e){if(e.targ
 // INIT
 renderHome();
 </script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // Use the config from your photo
+  const firebaseConfig = {
+    apiKey: "AIzaSyAsN2_FzgS0WC38Hf4a1k4fgMYvHuVTd5Q",
+    authDomain: "psapp-6a01d.firebaseapp.com",
+    projectId: "psapp-6a01d",
+    storageBucket: "psapp-6a01d.firebasestorage.app",
+    messagingSenderId: "180232235864",
+    appId: "1:180232235864:web:c57867b3a2164923dad32d"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // This saves your data to the cloud automatically
+  async function save() {
+    localStorage.setItem('txv2', JSON.stringify(transactions));
+    await db.collection("userdata").doc("ps_enterprise_data").set({
+      transactions: transactions,
+      stock: stock
+    });
+  }
+</script>
 </body>
 </html>
