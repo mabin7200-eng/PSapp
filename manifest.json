@@ -1,8 +1,9 @@
 {
-  "name": "Expense Manager PS",
-  "short_name": "Expenses",
+  "name": "PS",
+  "short_name": "PS app",
   "start_url": "/index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#1a56db",
   "theme_color": "#1a56db",
   "icons": [
@@ -10,6 +11,7 @@
       "src": "https://cdn-icons-png.flaticon.com/512/2344/2344132.png",
       "sizes": "512x512",
       "type": "image/png"
+      "purpose": "any maskable"
     }
   ]
 }
