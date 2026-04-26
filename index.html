@@ -911,6 +911,12 @@ function renderStock(){
         </div>
       </div>
     </div>`).join('');
+  <div class="stock-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+    <span><strong>${item.name}</strong>: ${item.qty} units</span>
+    <button onclick="deleteStockItem('${item.name}')" style="background: none; border: none; color: red; cursor: pointer; font-size: 1.2rem;">
+        &times;
+    </button>
+</div>
 }
 
 function toggleStock(idx){
@@ -1012,6 +1018,28 @@ async function deleteTx() {
         .catch(err => console.log("Error: ", err));
     });
   }
-</script>
+  
+  async function deleteStockItem(itemName) {
+    if (!confirm(`Are you sure you want to remove "${itemName}" from your stock list?`)) return;
+
+    // 1. Remove from local stock array
+    stock = stock.filter(s => s.name !== itemName);
+
+    // 2. Sync to Firebase Cloud
+    try {
+        await db.collection("userdata").doc("ps_enterprise_data").update({
+            stock: stock
+        });
+
+        // 3. Update UI
+        renderStock();
+        renderHome(); // Updates the dropdowns in the Expense section too
+        alert("✅ Stock item removed from Cloud!");
+    } catch (error) {
+        console.error("Error removing stock item:", error);
+        alert("❌ Failed to update Cloud.");
+    }
+}
+  </script>
 </body>
 </html>
