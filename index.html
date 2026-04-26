@@ -885,10 +885,9 @@ function renderStock(){
         <div style="text-align:right; margin-right:15px;">
           <div class="stock-qty ${s.qty<=0?'low':''}">${s.qty.toFixed(2)} ${s.unit||''}</div>
         </div>
-        // Look for the <img> or 🗑️ tag and change the onclick:
-<button onclick="deleteStockItem(event, ${idx})" 
+       <button onclick="deleteStockItem(event, ${idx})" 
         style="background:none; border:none; z-index:10; cursor:pointer; padding:10px;">
-    <img src="trash-icon-url" style="width:24px; pointer-events:auto;">
+    <img src="🗑️ " style="width:24px; pointer-events:auto;">
 </button>
       </div>
       <div class="stock-body" id="sb${idx}">
