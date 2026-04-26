@@ -307,6 +307,10 @@ tr:hover td{background:var(--surface2);}
       <div class="home-date" id="homeDate"></div>
       <div class="home-title">Tap a section to open</div>
     </div>
+    <div class="home-bell" onclick="openInbox()">
+      ✉️
+      <div class="home-bell-badge" id="homeBellBadge"></div>
+    </div>
   </div>
 
   <div class="home-cards" style="grid-template-columns:1fr 1fr;">
@@ -348,6 +352,7 @@ tr:hover td{background:var(--surface2);}
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Expenses</span>
     <div class="topbar-actions">
+      <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge1"></span></button>
       <button class="topbar-btn" onclick="savePDF()">⬇ PDF</button>
     </div>
   </div>
@@ -468,6 +473,7 @@ tr:hover td{background:var(--surface2);}
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Stock</span>
     <div class="topbar-actions">
+      <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge2"></span></button>
       <button class="topbar-btn" onclick="saveStockPDF()">⬇ PDF</button>
     </div>
   </div>
@@ -482,6 +488,7 @@ tr:hover td{background:var(--surface2);}
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">🔔 Task Reminders</span>
     <div class="topbar-actions">
+      <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge3"></span></button>
       <button class="topbar-btn" onclick="saveTaskPDF()">⬇ PDF</button>
     </div>
   </div>
