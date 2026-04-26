@@ -885,7 +885,11 @@ function renderStock(){
         <div style="text-align:right; margin-right:15px;">
           <div class="stock-qty ${s.qty<=0?'low':''}">${s.qty.toFixed(2)} ${s.unit||''}</div>
         </div>
-        <button onclick="deleteStockItem(event, '${s.name}')" style="background:none; border:none; color:#ff4d4d; font-size:1.2rem; cursor:pointer;">🗑️</button>
+        // Look for the <img> or 🗑️ tag and change the onclick:
+<button onclick="deleteStockItem(event, ${idx})" 
+        style="background:none; border:none; z-index:10; cursor:pointer; padding:10px;">
+    <img src="trash-icon-url" style="width:24px; pointer-events:auto;">
+</button>
       </div>
       <div class="stock-body" id="sb${idx}">
         <div class="use-form">
@@ -918,28 +922,25 @@ function recordUsage(idx){
   save(); renderStock(); renderHome();
 }
 
-async function deleteStockItem(index) {
-    // 1. Ask for permission
+// Add this to your script area
+async function deleteStockItem(event, index) {
+    // This is the MOST IMPORTANT line. It stops the card from opening.
+    event.stopPropagation(); 
+
     const itemName = stock[index].name;
-    if (!confirm(`Delete "${itemName}" from PS Enterprises records?`)) return;
+    if (!confirm(`Permanently remove ${itemName}?`)) return;
 
-    // 2. Remove it from the list
-    const newStock = [...stock]; // Create a copy
-    newStock.splice(index, 1);   // Remove the item at that position
+    // Create new list without the item
+    const newStock = stock.filter((_, i) => i !== index);
 
-    // 3. Update the Cloud (Firebase)
     try {
         await db.collection("userdata").doc("ps_enterprise_data").update({
             stock: newStock
         });
-
-        // 4. Update the app's memory and screen
         stock = newStock;
-        renderStock();
-        alert("✅ Deleted successfully!");
-    } catch (error) {
-        console.error("Cloud Error:", error);
-        alert("❌ Failed to delete. Check internet connection.");
+        renderStock(); // Refresh the list
+    } catch (e) {
+        alert("Error: " + e.message);
     }
 }
 
