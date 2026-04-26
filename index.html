@@ -881,7 +881,7 @@ function renderStock(){
     <datalist id="usageOptions">${itOpts}</datalist>
   </div>`;
 
-  el.innerHTML=stock.map((s,idx)=>
+  el.innerHTML=stock.map((s,idx)=>'
     <div class="stock-card">
         <div class="stock-hdr" style="display:flex; justify-content:space-between; align-items:center;">
             <div onclick="toggleStock(${idx})" style="flex-grow:1; cursor:pointer;">
