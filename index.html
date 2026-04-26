@@ -27,6 +27,32 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .screen{display:none;min-height:100vh;padding-bottom:90px;}
 .screen.active{display:block;}
 
+/* GLOBAL INBOX PANEL */
+.inbox-panel{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;display:none;flex-direction:column;}
+.inbox-panel.open{display:flex;}
+.inbox-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.4);}
+.inbox-drawer{position:absolute;top:0;left:0;right:0;background:var(--surface);border-radius:0 0 20px 20px;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--shadow-md);animation:slideDown 0.25s ease;}
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.inbox-drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:var(--accent);color:#fff;}
+.inbox-drawer-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:10px;}
+.inbox-drawer-close{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.inbox-drawer-body{overflow-y:auto;padding:14px 16px;flex:1;}
+.inbox-empty-global{background:var(--green-light);border:1px solid #6ee7b7;border-radius:10px;padding:14px 16px;font-size:0.85rem;color:var(--green);font-weight:600;text-align:center;}
+/* BELL BUTTON */
+.bell-btn{position:relative;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
+.bell-btn:hover{background:rgba(255,255,255,0.28);}
+.bell-dot{position:absolute;top:4px;right:4px;background:var(--red);border-radius:50%;width:8px;height:8px;border:2px solid var(--accent);display:none;}
+.bell-dot.show{display:block;}
+.bell-count-badge{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;border-radius:50%;min-width:17px;height:17px;font-size:0.6rem;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid var(--accent);padding:0 3px;}
+.bell-count-badge.show{display:flex;}
+/* HOME BELL */
+.home-header{position:relative;}
+.home-bell{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.3);border-radius:12px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;}
+.home-bell-badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:0.62rem;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid #fff;padding:0 3px;}
+.home-bell-badge.show{display:flex;}
+/* Hide old inline inbox */
+.inbox-wrap{display:none;}
+
 /* TOP BAR */
 .topbar{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-back{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
@@ -456,9 +482,6 @@ tr:hover td{background:var(--surface2);}
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">🔔 Task Reminders</span>
     <div class="topbar-actions">
-      <button class="topbar-btn" onclick="showTaskNotifications()" title="Test Notification">🔔</button>
-      <button class="topbar-btn" onclick="sendTelegramTaskReport()" title="Send Telegram">✈️</button>
-      <button class="topbar-btn" onclick="openTelegramSetup()" title="Telegram Setup">⚙️</button>
       <button class="topbar-btn" onclick="saveTaskPDF()">⬇ PDF</button>
     </div>
   </div>
@@ -514,50 +537,6 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
-<!-- TELEGRAM SETUP MODAL -->
-<div class="task-modal-ov" id="telegramSetupModal">
-  <div class="task-modal-box">
-    <div class="modal-hdr">
-      <h2>✈️ Telegram Bot Setup</h2>
-      <button class="modal-close" onclick="closeTelegramSetup()">✕</button>
-    </div>
-    <div class="modal-body" style="padding:16px 18px;">
-      <div style="background:var(--accent-light);border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.8;color:var(--text2);">
-        <b style="font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;display:block;margin-bottom:6px;">How to set up (5 minutes):</b>
-        <b>Step 1</b> — Open Telegram → search <b>@BotFather</b><br/>
-        <b>Step 2</b> — Send <b>/newbot</b> → enter a name<br/>
-        <b>Step 3</b> — Copy the <b>Bot Token</b> it gives you<br/>
-        <b>Step 4</b> — Search your bot name → tap Start<br/>
-        <b>Step 5</b> — Open this URL in browser to get Chat ID:<br/>
-        <code style="background:#e8ecff;padding:2px 6px;border-radius:4px;font-size:0.75rem;word-break:break-all;">https://api.telegram.org/bot<b>YOUR_TOKEN</b>/getUpdates</code><br/>
-        <b>Step 6</b> — Copy the <b>"id"</b> number from result → paste below
-      </div>
-      <div style="margin-bottom:10px;">
-        <label>Bot Token</label>
-        <input type="text" id="tgToken" placeholder="123456789:AAFxxxxxxxxxxxxxxxxxxxxxx"/>
-      </div>
-      <div style="margin-bottom:16px;">
-        <label>Chat ID</label>
-        <input type="text" id="tgChatId" placeholder="123456789"/>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-success btn-full" onclick="saveTelegramConfig()">✓ Connect & Test</button>
-        <button class="btn btn-ghost" onclick="closeTelegramSetup()">✕</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- NOTIFICATION PERMISSION BANNER -->
-<div id="notifBanner" style="display:none;position:fixed;bottom:90px;left:16px;right:16px;background:var(--accent);color:#fff;border-radius:12px;padding:14px 16px;z-index:95;align-items:center;gap:12px;box-shadow:var(--shadow-md);">
-  <span style="font-size:1.4rem;">🔔</span>
-  <div style="flex:1;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.95rem;">Enable Task Notifications</div>
-    <div style="font-size:0.72rem;opacity:0.85;">Get alerts when tasks are due</div>
-  </div>
-  <button onclick="requestAndNotify()" style="background:#fff;color:var(--accent);border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:0.78rem;cursor:pointer;white-space:nowrap;">Allow</button>
-  <button onclick="document.getElementById('notifBanner').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;">✕</button>
-</div>
 
 <div class="modal-ov" id="detailModal">
   <div class="modal-box">
@@ -1211,19 +1190,26 @@ function renderTask(){
   const el = document.getElementById('taskList');
   const sb = document.getElementById('taskSummaryBar');
 
-  // Update home card too
+  // Safe home card update — elements may not be visible
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
   const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
-  document.getElementById('homeTaskCount').textContent = tasks.length;
-  document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
-  document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue' : dueSoon+' due soon';
+  const htc = document.getElementById('homeTaskCount');
+  const hts = document.getElementById('homeTaskSub');
+  const htd = document.getElementById('homeTaskDue');
+  if(htc) htc.textContent = tasks.length;
+  if(hts) hts.textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
+  if(htd) htd.textContent = overdue>0 ? overdue+' overdue' : dueSoon>0 ? dueSoon+' due soon' : 'all on track ✅';
 
-  sb.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;">
+  if(sb) sb.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;">
     <span style="background:#fff;border:1px solid #e2e5eb;border-radius:20px;padding:5px 14px;font-size:0.78rem;"><b>${tasks.length}</b> tasks</span>
     ${overdue>0?`<span style="background:var(--red-light);border:1px solid #fca5a5;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--red);font-weight:700;"><b>${overdue}</b> overdue</span>`:''}
     ${dueSoon>0?`<span style="background:var(--orange-light);border:1px solid #fdba74;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--orange);font-weight:700;"><b>${dueSoon}</b> due within 10 days</span>`:''}
   </div>`;
 
+  // Update global inbox bell badge
+  renderInboxPanel();
+
+  if(!el) return;
   if(!tasks.length){
     el.innerHTML=`<div class="empty-state"><span class="ei">🔔</span>No tasks yet.<br>Tap <b>+</b> to add your first reminder.</div>`;
     return;
@@ -1344,6 +1330,7 @@ async function markDoneToday(id){
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
   try { await db.collection("userdata").doc("ps_enterprise_data").update({ tasks: tasks }); } catch(e){}
   renderTask();
+  renderHome(); // update inbox — alert disappears automatically
 }
 
 async function deleteTask(id){
@@ -1388,152 +1375,9 @@ function fmtDate(d){if(!d)return '—';const[y,m,day]=d.split('-');return day+'/
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
 document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
-document.getElementById('telegramSetupModal').addEventListener('click',function(e){if(e.target===this)closeTelegramSetup();});
-
-async function requestAndNotify(){
-  document.getElementById('notifBanner').style.display='none';
-  const granted = await requestNotificationPermission();
-  if(granted){ showTaskNotifications(); }
-  else { alert('Notifications blocked. Please enable in browser settings.'); }
-}
-
-function showNotifBannerIfNeeded(){
-  if(!('Notification' in window)) return;
-  if(Notification.permission === 'default'){
-    const banner = document.getElementById('notifBanner');
-    if(banner) banner.style.display='flex';
-  }
-}
-
-// ═══════════════ BROWSER NOTIFICATIONS ═══════════════
-async function requestNotificationPermission(){
-  if(!('Notification' in window)) return false;
-  if(Notification.permission === 'granted') return true;
-  const perm = await Notification.requestPermission();
-  return perm === 'granted';
-}
-
-function getTasksAlert(){
-  const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0; });
-  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10; });
-  return { overdue, dueSoon };
-}
-
-async function showTaskNotifications(){
-  const granted = await requestNotificationPermission();
-  if(!granted) return;
-  const { overdue, dueSoon } = getTasksAlert();
-  if(overdue.length){
-    new Notification('⚠️ PS Expense — Overdue Tasks', {
-      body: overdue.map(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return `• ${t.name} (${Math.abs(d)} days overdue)`; }).join('\n'),
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
-      tag: 'overdue-tasks',
-      renotify: true
-    });
-  }
-  if(dueSoon.length){
-    setTimeout(()=>{
-      new Notification('🔔 PS Expense — Due Soon', {
-        body: dueSoon.map(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return `• ${t.name} (${d===0?'today':d+' days left'})`; }).join('\n'),
-        icon: 'icon-192.png',
-        badge: 'icon-192.png',
-        tag: 'due-soon-tasks',
-        renotify: true
-      });
-    }, 1500);
-  }
-}
-
-// Schedule daily notification via service worker (if supported)
-async function scheduleDailyNotification(){
-  if(!('serviceWorker' in navigator)) return;
-  const reg = await navigator.serviceWorker.ready;
-  // Store check time in localStorage — check once per day
-  const lastCheck = localStorage.getItem('lastNotifCheck');
-  const today = new Date().toISOString().split('T')[0];
-  if(lastCheck !== today){
-    localStorage.setItem('lastNotifCheck', today);
-    await showTaskNotifications();
-  }
-}
-
-// ═══════════════ TELEGRAM BOT ═══════════════
-let telegramConfig = JSON.parse(localStorage.getItem('telegramConfig')||'null');
-
-function openTelegramSetup(){
-  document.getElementById('telegramSetupModal').classList.add('open');
-  if(telegramConfig){
-    document.getElementById('tgToken').value = telegramConfig.token||'';
-    document.getElementById('tgChatId').value = telegramConfig.chatId||'';
-  }
-}
-function closeTelegramSetup(){
-  document.getElementById('telegramSetupModal').classList.remove('open');
-}
-
-async function saveTelegramConfig(){
-  const token = document.getElementById('tgToken').value.trim();
-  const chatId = document.getElementById('tgChatId').value.trim();
-  if(!token||!chatId){ alert('Please fill both Bot Token and Chat ID'); return; }
-  telegramConfig = { token, chatId };
-  localStorage.setItem('telegramConfig', JSON.stringify(telegramConfig));
-  // Test message
-  const sent = await sendTelegram('✅ PS Expense connected! You will receive task reminders here.');
-  if(sent){ alert('✅ Telegram connected! Test message sent.'); closeTelegramSetup(); }
-  else { alert('❌ Failed. Check your Token and Chat ID.'); }
-}
-
-async function sendTelegram(message){
-  if(!telegramConfig) return false;
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${telegramConfig.token}/sendMessage`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ chat_id: telegramConfig.chatId, text: message, parse_mode:'HTML' })
-    });
-    const data = await res.json();
-    return data.ok;
-  } catch(e){ console.error('Telegram error', e); return false; }
-}
-
-async function sendTelegramTaskReport(){
-  if(!telegramConfig){ openTelegramSetup(); return; }
-  const { overdue, dueSoon } = getTasksAlert();
-  if(!overdue.length && !dueSoon.length){
-    await sendTelegram('✅ <b>PS Expense — All Tasks On Track!</b>\n\nNo overdue or due-soon tasks. 👍');
-    alert('✅ Telegram message sent!');
-    return;
-  }
-  let msg = '🔔 <b>PS Expense — Task Reminder</b>\n\n';
-  if(overdue.length){
-    msg += '⚠️ <b>OVERDUE:</b>\n';
-    overdue.forEach(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); msg+=`• ${t.name} — ${Math.abs(d)} days overdue\n`; });
-    msg += '\n';
-  }
-  if(dueSoon.length){
-    msg += '🟡 <b>DUE SOON (within 10 days):</b>\n';
-    dueSoon.forEach(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); msg+=`• ${t.name} — ${d===0?'Due today':d+' days left'}\n`; });
-  }
-  msg += `\n<i>Sent from PS Expense App</i>`;
-  const sent = await sendTelegram(msg);
-  alert(sent ? '✅ Telegram reminder sent!' : '❌ Failed to send. Check connection.');
-}
-
-// Auto send Telegram once per day on app open
-async function autoTelegramDaily(){
-  if(!telegramConfig) return;
-  const lastTg = localStorage.getItem('lastTgSent');
-  const today = new Date().toISOString().split('T')[0];
-  if(lastTg === today) return;
-  const { overdue, dueSoon } = getTasksAlert();
-  if(!overdue.length && !dueSoon.length) return;
-  const sent = await sendTelegramTaskReport();
-  if(sent !== false) localStorage.setItem('lastTgSent', today);
-}
 
 // ═══════════════ LOAD FROM CLOUD ═══════════════
-// Load from Firebase on startup — cloud is source of truth
+// Firebase is source of truth — load on every startup
 async function loadFromCloud(){
   try {
     const doc = await db.collection("userdata").doc("ps_enterprise_data").get();
@@ -1545,10 +1389,6 @@ async function loadFromCloud(){
     }
   } catch(e){ console.log("Offline — using local data"); }
   renderHome();
-  // Trigger notifications after data loads
-  scheduleDailyNotification();
-  autoTelegramDaily();
-  showNotifBannerIfNeeded();
 }
 loadFromCloud();
 </script>
