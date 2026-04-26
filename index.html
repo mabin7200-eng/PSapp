@@ -918,15 +918,31 @@ function recordUsage(idx){
   save(); renderStock(); renderHome();
 }
 
-async function deleteStockItem(event, itemName) {
-    event.stopPropagation(); 
-    if (!confirm(`Permanently remove "${itemName}" from PS Enterprises stock?`)) return;
-    stock = stock.filter(s => s.name !== itemName);
+async function deleteStockItem(index) {
+    const itemName = stock[index].name;
+    if (!confirm(`Are you sure you want to remove "${itemName}" from PS Enterprises stock?`)) return;
+
+    // 1. Create a NEW copy of the stock list without the deleted item
+    const updatedStock = stock.filter((_, i) => i !== index);
+
+    // 2. IMPORTANT: Overwrite the data in the Firebase Cloud
     try {
-        await db.collection("userdata").doc("ps_enterprise_data").update({ stock: stock });
-        renderStock(); renderHome();
-        alert("✅ Item removed from Cloud");
-    } catch (e) { alert("❌ Error syncing deletion."); }
+        await db.collection("userdata").doc("ps_enterprise_data").update({
+            stock: updatedStock
+        });
+
+        // 3. ONLY IF CLOUD SUCCESS: Update your app's local memory
+        stock = updatedStock;
+        localStorage.setItem('stockv2', JSON.stringify(stock));
+
+        // 4. Refresh the UI
+        renderStock();
+        renderHome(); // Updates dropdowns
+        alert("✅ Stock item removed from Cloud!");
+    } catch (error) {
+        console.error("Cloud Error:", error);
+        alert("❌ Error: Could not update database. Check internet.");
+    }
 }
 
 // ═══════════════ UTILS ═══════════════
