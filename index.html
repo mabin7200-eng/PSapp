@@ -207,6 +207,50 @@ tr:hover td{background:var(--surface2);}
 .log-in{color:var(--green);font-weight:700;}
 .log-out{color:var(--red);font-weight:700;}
 
+/* INBOX / NOTIFICATION SECTION */
+.inbox-wrap{padding:0 16px 16px;}
+.inbox-title{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.inbox-badge{background:var(--red);color:#fff;border-radius:20px;padding:2px 8px;font-size:0.68rem;font-weight:800;}
+.inbox-empty{background:var(--green-light);border:1px solid #6ee7b7;border-radius:10px;padding:12px 16px;font-size:0.82rem;color:var(--green);font-weight:600;text-align:center;}
+.inbox-alert{border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;border:1px solid transparent;}
+.inbox-alert.overdue{background:#fff5f5;border-color:#fca5a5;}
+.inbox-alert.due-soon{background:#fffbeb;border-color:#fcd34d;}
+.inbox-alert-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.inbox-alert-body{flex:1;min-width:0;}
+.inbox-alert-name{font-weight:700;font-size:0.88rem;color:var(--text);}
+.inbox-alert-msg{font-size:0.75rem;margin-top:2px;}
+.inbox-alert.overdue .inbox-alert-msg{color:var(--red);}
+.inbox-alert.due-soon .inbox-alert-msg{color:var(--orange);}
+.inbox-alert-date{font-size:0.68rem;color:var(--muted2);margin-top:3px;}
+.inbox-done-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif;flex-shrink:0;align-self:center;}
+.inbox-done-btn:hover{background:#046443;}
+.task-wrap{padding:14px 16px;}
+.task-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:10px;border:1px solid var(--border);overflow:hidden;transition:transform 0.15s;}
+.task-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.task-card.overdue{border-left:4px solid var(--red);}
+.task-card.due-soon{border-left:4px solid var(--orange);}
+.task-card.ok{border-left:4px solid var(--green);}
+.task-hdr{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.task-name-txt{font-weight:700;font-size:0.95rem;flex:1;}
+.task-days-badge{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;padding:4px 12px;border-radius:20px;white-space:nowrap;}
+.task-days-badge.overdue{background:var(--red-light);color:var(--red);}
+.task-days-badge.due-soon{background:var(--orange-light);color:var(--orange);}
+.task-days-badge.ok{background:var(--green-light);color:var(--green);}
+.task-meta-row{padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap;}
+.task-meta-chip{font-size:0.68rem;color:var(--muted2);background:var(--surface2);padding:3px 10px;border-radius:20px;}
+.task-remarks{padding:0 16px 12px;font-size:0.78rem;color:var(--muted);font-style:italic;}
+.task-actions{padding:0 16px 12px;display:flex;gap:8px;}
+
+/* TASK MODAL */
+.task-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+.task-modal-ov.open{display:flex;}
+.task-modal-box{background:var(--surface);border-radius:14px;width:100%;max-width:440px;box-shadow:var(--shadow-md);margin:auto;}
+
+/* TASK HOME CARD */
+.home-card.task-card-home{background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047;}
+.home-card.task-card-home::after{background:#ca8a04;}
+.home-card.task-card-home .home-card-amount{color:#92400e;}
+
 /* EMPTY */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted2);}
 .empty-state .ei{font-size:2rem;display:block;margin-bottom:10px;}
@@ -239,7 +283,7 @@ tr:hover td{background:var(--surface2);}
     </div>
   </div>
 
-  <div class="home-cards">
+  <div class="home-cards" style="grid-template-columns:1fr 1fr;">
     <div class="home-card expense-card" onclick="openExpense()">
       <span class="home-card-icon">💸</span>
       <div class="home-card-label">Total Expenses</div>
@@ -254,7 +298,23 @@ tr:hover td{background:var(--surface2);}
       <div class="home-card-sub" id="homeStockSub">items tracked</div>
       <span class="home-card-arrow">›</span>
     </div>
+    <div class="home-card task-card-home" onclick="openTask()" style="grid-column:1/-1;">
+      <span class="home-card-icon">🔔</span>
+      <div class="home-card-label">Task Reminders</div>
+      <div class="home-card-amount" id="homeTaskCount">0</div>
+      <div class="home-card-sub" id="homeTaskSub">tasks — <span id="homeTaskDue">0 due soon</span></div>
+      <span class="home-card-arrow">›</span>
+    </div>
   </div>
+
+  <!-- INBOX / ALERTS -->
+  <div class="inbox-wrap" id="inboxWrap">
+    <div class="inbox-title">
+      🔔 Alerts <span class="inbox-badge" id="inboxBadge" style="display:none;">0</span>
+    </div>
+    <div id="inboxList"></div>
+  </div>
+
 </div>
 
 <div class="screen" id="screen-expense">
@@ -391,6 +451,114 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
+<div class="screen" id="screen-task">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <span class="topbar-title">🔔 Task Reminders</span>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="showTaskNotifications()" title="Test Notification">🔔</button>
+      <button class="topbar-btn" onclick="sendTelegramTaskReport()" title="Send Telegram">✈️</button>
+      <button class="topbar-btn" onclick="openTelegramSetup()" title="Telegram Setup">⚙️</button>
+      <button class="topbar-btn" onclick="saveTaskPDF()">⬇ PDF</button>
+    </div>
+  </div>
+  <div class="task-wrap">
+    <div id="taskSummaryBar" style="margin-bottom:12px;"></div>
+    <div id="taskList"></div>
+  </div>
+  <button class="fab visible" onclick="openTaskModal(null)">+</button>
+</div>
+
+<!-- TASK ADD/EDIT MODAL -->
+<div class="task-modal-ov" id="taskModal">
+  <div class="task-modal-box">
+    <div class="modal-hdr">
+      <h2 id="taskModalTitle">Add Task</h2>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 18px;">
+      <input type="hidden" id="taskEditId"/>
+      <div style="margin-bottom:10px;">
+        <label>Task Name</label>
+        <input type="text" id="taskName" placeholder="e.g. Water filter, Rubber..."/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label>Last Done Date</label>
+          <input type="date" id="taskLastDate"/>
+        </div>
+        <div>
+          <label>Days Frequency</label>
+          <input type="number" id="taskFreq" min="1" placeholder="e.g. 30"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label>Next Due Date (Auto)</label>
+          <input type="text" id="taskNextDate" readonly style="background:#f0f2f5;color:var(--muted);font-weight:700;"/>
+        </div>
+        <div>
+          <label>Days Left (Auto)</label>
+          <input type="text" id="taskDaysLeft" readonly style="background:#f0f2f5;font-weight:800;"/>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label>Remarks</label>
+        <textarea id="taskRemarks" placeholder="Any notes or remarks..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-success btn-full" onclick="saveTask()">✓ Save Task</button>
+        <button class="btn btn-ghost" onclick="closeTaskModal()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TELEGRAM SETUP MODAL -->
+<div class="task-modal-ov" id="telegramSetupModal">
+  <div class="task-modal-box">
+    <div class="modal-hdr">
+      <h2>✈️ Telegram Bot Setup</h2>
+      <button class="modal-close" onclick="closeTelegramSetup()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 18px;">
+      <div style="background:var(--accent-light);border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.8;color:var(--text2);">
+        <b style="font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;display:block;margin-bottom:6px;">How to set up (5 minutes):</b>
+        <b>Step 1</b> — Open Telegram → search <b>@BotFather</b><br/>
+        <b>Step 2</b> — Send <b>/newbot</b> → enter a name<br/>
+        <b>Step 3</b> — Copy the <b>Bot Token</b> it gives you<br/>
+        <b>Step 4</b> — Search your bot name → tap Start<br/>
+        <b>Step 5</b> — Open this URL in browser to get Chat ID:<br/>
+        <code style="background:#e8ecff;padding:2px 6px;border-radius:4px;font-size:0.75rem;word-break:break-all;">https://api.telegram.org/bot<b>YOUR_TOKEN</b>/getUpdates</code><br/>
+        <b>Step 6</b> — Copy the <b>"id"</b> number from result → paste below
+      </div>
+      <div style="margin-bottom:10px;">
+        <label>Bot Token</label>
+        <input type="text" id="tgToken" placeholder="123456789:AAFxxxxxxxxxxxxxxxxxxxxxx"/>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label>Chat ID</label>
+        <input type="text" id="tgChatId" placeholder="123456789"/>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-success btn-full" onclick="saveTelegramConfig()">✓ Connect & Test</button>
+        <button class="btn btn-ghost" onclick="closeTelegramSetup()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION PERMISSION BANNER -->
+<div id="notifBanner" style="display:none;position:fixed;bottom:90px;left:16px;right:16px;background:var(--accent);color:#fff;border-radius:12px;padding:14px 16px;z-index:95;align-items:center;gap:12px;box-shadow:var(--shadow-md);">
+  <span style="font-size:1.4rem;">🔔</span>
+  <div style="flex:1;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.95rem;">Enable Task Notifications</div>
+    <div style="font-size:0.72rem;opacity:0.85;">Get alerts when tasks are due</div>
+  </div>
+  <button onclick="requestAndNotify()" style="background:#fff;color:var(--accent);border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:0.78rem;cursor:pointer;white-space:nowrap;">Allow</button>
+  <button onclick="document.getElementById('notifBanner').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:8px;padding:7px 10px;cursor:pointer;">✕</button>
+</div>
+
 <div class="modal-ov" id="detailModal">
   <div class="modal-box">
     <div class="modal-hdr">
@@ -456,8 +624,6 @@ let stock        = JSON.parse(localStorage.getItem('stockv2')||'[]');
 let units        = JSON.parse(localStorage.getItem('units')||'["Kg","Ton","Bag","Piece","Litre","Meter","Box","Set","Day","Trip","Load"]');
 let names        = JSON.parse(localStorage.getItem('names')||'[]');
 let items        = JSON.parse(localStorage.getItem('items_db')||'[]');
-
-let currentCat = null;
 let currentRows = [];
 let unitRowIdx = null;
 let unitSelected = null;
@@ -477,6 +643,7 @@ async function save() {
     await db.collection("userdata").doc("ps_enterprise_data").set({
       transactions: transactions,
       stock: stock,
+      tasks: tasks,
       lastUpdated: new Date().toISOString()
     });
   } catch(e) { console.error("Cloud Sync Error", e); }
@@ -504,6 +671,82 @@ function renderHome(){
   document.getElementById('homeExpCount').textContent = transactions.length+' transaction'+(transactions.length!==1?'s':'');
   document.getElementById('homeStockCount').textContent = stock.length;
   document.getElementById('homeStockSub').textContent = stock.length+' item'+(stock.length!==1?'s':'')+' tracked';
+
+  // Task summary
+  const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  document.getElementById('homeTaskCount').textContent = tasks.length;
+  document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
+  document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue ⚠️' : dueSoon>0 ? dueSoon+' due soon' : 'all on track ✅';
+
+  renderInbox();
+}
+
+function renderInbox(){
+  const list   = document.getElementById('inboxList');
+  const badge  = document.getElementById('inboxBadge');
+
+  // Collect overdue + due soon
+  const alerts = [];
+  tasks.forEach(t => {
+    const d = taskDaysLeft(t.lastDate, t.freq);
+    if(d === null) return;
+    if(d < 0)        alerts.push({...t, d, type:'overdue'});
+    else if(d <= 10) alerts.push({...t, d, type:'due-soon'});
+  });
+
+  // Sort: overdue first then by days
+  alerts.sort((a,b) => a.d - b.d);
+
+  // Badge
+  if(alerts.length){
+    badge.style.display = 'inline-block';
+    badge.textContent   = alerts.length;
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Empty state
+  if(!alerts.length){
+    list.innerHTML = `<div class="inbox-empty">✅ All tasks on track — no alerts!</div>`;
+    return;
+  }
+
+  // Build alert cards
+  list.innerHTML = alerts.map(t => {
+    const isOverdue = t.type === 'overdue';
+    const icon      = isOverdue ? '🔴' : '🟡';
+    let   msgTxt    = '';
+    if(isOverdue){
+      msgTxt = `${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} overdue — action needed!`;
+    } else {
+      msgTxt = t.d === 0 ? '⚡ Due TODAY!' :
+               t.d === 1 ? '⚡ Due Tomorrow!' :
+               `Due in ${t.d} days`;
+    }
+    const nextD = taskNextDate(t.lastDate, t.freq);
+    return `
+      <div class="inbox-alert ${t.type}">
+        <div class="inbox-alert-icon">${icon}</div>
+        <div class="inbox-alert-body">
+          <div class="inbox-alert-name">${t.name}</div>
+          <div class="inbox-alert-msg">${msgTxt}</div>
+          ${t.remarks ? `<div class="inbox-alert-date">📝 ${t.remarks}</div>` : ''}
+          <div class="inbox-alert-date">⏭ Next due: ${nextD ? fmtDate(nextD) : '—'} &nbsp;|&nbsp; Every ${t.freq} days</div>
+        </div>
+        <button class="inbox-done-btn" onclick="inboxMarkDone('${t.id}')">✓ Done</button>
+      </div>`;
+  }).join('');
+}
+
+async function inboxMarkDone(id){
+  const idx = tasks.findIndex(t=>t.id===id);
+  if(idx<0) return;
+  const today = new Date().toISOString().split('T')[0];
+  tasks[idx].lastDate = today;
+  localStorage.setItem('tasks_v1', JSON.stringify(tasks));
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ tasks }); } catch(e){}
+  renderHome(); // re-renders inbox automatically — alert disappears
 }
 
 // ═══════════════ EXPENSE LIST ═══════════════
@@ -941,6 +1184,202 @@ async function deleteStockItem(index) {
     alert("❌ Error: " + e.message);
   }
 }
+// ═══════════════ TASKS ═══════════════
+let tasks = JSON.parse(localStorage.getItem('tasks_v1')||'[]');
+
+function openTask(){showScreen('task');renderTask();}
+
+function taskDaysLeft(lastDate, freq){
+  if(!lastDate||!freq) return null;
+  const last = new Date(lastDate);
+  const next = new Date(last);
+  next.setDate(next.getDate() + parseInt(freq));
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  next.setHours(0,0,0,0);
+  return Math.round((next - today)/(1000*60*60*24));
+}
+
+function taskNextDate(lastDate, freq){
+  if(!lastDate||!freq) return '';
+  const last = new Date(lastDate);
+  last.setDate(last.getDate() + parseInt(freq));
+  return last.toISOString().split('T')[0];
+}
+
+function renderTask(){
+  const el = document.getElementById('taskList');
+  const sb = document.getElementById('taskSummaryBar');
+
+  // Update home card too
+  const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  document.getElementById('homeTaskCount').textContent = tasks.length;
+  document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
+  document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue' : dueSoon+' due soon';
+
+  sb.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span style="background:#fff;border:1px solid #e2e5eb;border-radius:20px;padding:5px 14px;font-size:0.78rem;"><b>${tasks.length}</b> tasks</span>
+    ${overdue>0?`<span style="background:var(--red-light);border:1px solid #fca5a5;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--red);font-weight:700;"><b>${overdue}</b> overdue</span>`:''}
+    ${dueSoon>0?`<span style="background:var(--orange-light);border:1px solid #fdba74;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--orange);font-weight:700;"><b>${dueSoon}</b> due within 10 days</span>`:''}
+  </div>`;
+
+  if(!tasks.length){
+    el.innerHTML=`<div class="empty-state"><span class="ei">🔔</span>No tasks yet.<br>Tap <b>+</b> to add your first reminder.</div>`;
+    return;
+  }
+
+  // Sort: overdue first, then by days left
+  const sorted = [...tasks].sort((a,b)=>{
+    const da=taskDaysLeft(a.lastDate,a.freq)??999;
+    const db2=taskDaysLeft(b.lastDate,b.freq)??999;
+    return da-db2;
+  });
+
+  el.innerHTML = sorted.map(t=>{
+    const days = taskDaysLeft(t.lastDate, t.freq);
+    const nextD = taskNextDate(t.lastDate, t.freq);
+    let statusClass = 'ok', badgeClass = 'ok', badgeText = '';
+    if(days===null){ badgeText='—'; statusClass='ok'; badgeClass='ok'; }
+    else if(days<0){ statusClass='overdue'; badgeClass='overdue'; badgeText=Math.abs(days)+' days overdue'; }
+    else if(days<=10){ statusClass='due-soon'; badgeClass='due-soon'; badgeText='Due in '+days+' day'+(days!==1?'s':''); }
+    else { statusClass='ok'; badgeClass='ok'; badgeText=days+' days left'; }
+
+    return `<div class="task-card ${statusClass}">
+      <div class="task-hdr">
+        <div class="task-name-txt">${t.name}</div>
+        <div class="task-days-badge ${badgeClass}">${badgeText}</div>
+      </div>
+      <div class="task-meta-row">
+        <span class="task-meta-chip">📅 Last: ${t.lastDate ? fmtDate(t.lastDate) : '—'}</span>
+        <span class="task-meta-chip">🔁 Every ${t.freq||'—'} days</span>
+        <span class="task-meta-chip">⏭ Next: ${nextD ? fmtDate(nextD) : '—'}</span>
+      </div>
+      ${t.remarks?`<div class="task-remarks">📝 ${t.remarks}</div>`:''}
+      <div class="task-actions">
+        <button class="btn btn-primary btn-sm" onclick="markDoneToday('${t.id}')">✓ Done Today</button>
+        <button class="btn btn-ghost btn-sm" onclick="openTaskModal('${t.id}')">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openTaskModal(id){
+  document.getElementById('taskEditId').value = id||'';
+  document.getElementById('taskModalTitle').textContent = id ? 'Edit Task' : 'Add Task';
+  if(id){
+    const t = tasks.find(t=>t.id===id);
+    if(!t) return;
+    document.getElementById('taskName').value = t.name||'';
+    document.getElementById('taskLastDate').value = t.lastDate||'';
+    document.getElementById('taskFreq').value = t.freq||'';
+    updateTaskCalc();
+    document.getElementById('taskRemarks').value = t.remarks||'';
+  } else {
+    document.getElementById('taskName').value='';
+    document.getElementById('taskLastDate').value='';
+    document.getElementById('taskFreq').value='';
+    document.getElementById('taskNextDate').value='';
+    document.getElementById('taskDaysLeft').value='';
+    document.getElementById('taskRemarks').value='';
+  }
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function updateTaskCalc(){
+  const last = document.getElementById('taskLastDate').value;
+  const freq = document.getElementById('taskFreq').value;
+  if(last && freq){
+    const next = taskNextDate(last, freq);
+    const days = taskDaysLeft(last, freq);
+    document.getElementById('taskNextDate').value = next ? fmtDate(next) : '';
+    const dl = document.getElementById('taskDaysLeft');
+    dl.value = days!==null ? (days<0?Math.abs(days)+' days overdue':days+' days left') : '';
+    dl.style.color = days<0?'var(--red)':days<=10?'var(--orange)':'var(--green)';
+  }
+}
+
+// Wire up live calc
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('taskLastDate').addEventListener('change', updateTaskCalc);
+  document.getElementById('taskFreq').addEventListener('input', updateTaskCalc);
+});
+
+function closeTaskModal(){document.getElementById('taskModal').classList.remove('open');}
+
+async function saveTask(){
+  const name = document.getElementById('taskName').value.trim();
+  const lastDate = document.getElementById('taskLastDate').value;
+  const freq = parseInt(document.getElementById('taskFreq').value)||0;
+  const remarks = document.getElementById('taskRemarks').value.trim();
+  const editId = document.getElementById('taskEditId').value;
+
+  if(!name){alert('Enter Task Name');return;}
+  if(!lastDate){alert('Enter Last Done Date');return;}
+  if(!freq){alert('Enter Days Frequency');return;}
+
+  if(editId){
+    const idx = tasks.findIndex(t=>t.id===editId);
+    if(idx>-1) tasks[idx]={...tasks[idx], name, lastDate, freq, remarks};
+  } else {
+    tasks.push({id:'t'+Date.now(), name, lastDate, freq, remarks});
+  }
+  localStorage.setItem('tasks_v1', JSON.stringify(tasks));
+
+  try {
+    await db.collection("userdata").doc("ps_enterprise_data").update({ tasks: tasks });
+  } catch(e){ console.log('Task cloud sync error', e); }
+
+  closeTaskModal();
+  renderTask();
+  renderHome();
+}
+
+async function markDoneToday(id){
+  const idx = tasks.findIndex(t=>t.id===id);
+  if(idx<0) return;
+  const today = new Date().toISOString().split('T')[0];
+  tasks[idx].lastDate = today;
+  localStorage.setItem('tasks_v1', JSON.stringify(tasks));
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ tasks: tasks }); } catch(e){}
+  renderTask();
+}
+
+async function deleteTask(id){
+  if(!confirm('Delete this task?')) return;
+  tasks = tasks.filter(t=>t.id!==id);
+  localStorage.setItem('tasks_v1', JSON.stringify(tasks));
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ tasks: tasks }); } catch(e){}
+  renderTask();
+  renderHome();
+}
+
+function saveTaskPDF(){
+  const sorted = [...tasks].sort((a,b)=>{
+    const da=taskDaysLeft(a.lastDate,a.freq)??999;
+    const db2=taskDaysLeft(b.lastDate,b.freq)??999;
+    return da-db2;
+  });
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Task Report</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;margin:24px;}h1{font-size:18px;margin-bottom:4px;}.sub{color:#888;font-size:11px;margin-bottom:16px;}table{width:100%;border-collapse:collapse;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-size:11px;}td{padding:8px 10px;border:1px solid #e5e7eb;font-size:11px;}.over{color:#c81e1e;font-weight:700;}.soon{color:#d03801;font-weight:700;}.ok{color:#057a55;font-weight:700;}</style>
+  </head><body>
+  <h1>🔔 Task Reminder Report</h1>
+  <div class="sub">Generated: ${new Date().toLocaleString('en-IN')} | Total: ${tasks.length} tasks</div>
+  <table><thead><tr><th>#</th><th>Task Name</th><th>Last Done</th><th>Frequency</th><th>Next Due</th><th>Days Left</th><th>Remarks</th></tr></thead><tbody>
+  ${sorted.map((t,i)=>{
+    const days=taskDaysLeft(t.lastDate,t.freq);
+    const next=taskNextDate(t.lastDate,t.freq);
+    const cls=days<0?'over':days<=10?'soon':'ok';
+    const daysTxt=days<0?Math.abs(days)+' overdue':days+' left';
+    return `<tr><td>${i+1}</td><td><b>${t.name}</b></td><td>${t.lastDate?fmtDate(t.lastDate):'—'}</td><td>${t.freq} days</td><td>${next?fmtDate(next):'—'}</td><td class="${cls}">${daysTxt}</td><td>${t.remarks||''}</td></tr>`;
+  }).join('')}
+  </tbody></table>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
 // ═══════════════ UTILS ═══════════════
 function fmt(n){if(isNaN(n))n=0;return '₹'+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 function pad(n){return String(n).padStart(4,'0');}
@@ -948,8 +1387,170 @@ function fmtDate(d){if(!d)return '—';const[y,m,day]=d.split('-');return day+'/
 
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
 document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
+document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
+document.getElementById('telegramSetupModal').addEventListener('click',function(e){if(e.target===this)closeTelegramSetup();});
 
-renderHome();
+async function requestAndNotify(){
+  document.getElementById('notifBanner').style.display='none';
+  const granted = await requestNotificationPermission();
+  if(granted){ showTaskNotifications(); }
+  else { alert('Notifications blocked. Please enable in browser settings.'); }
+}
+
+function showNotifBannerIfNeeded(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    const banner = document.getElementById('notifBanner');
+    if(banner) banner.style.display='flex';
+  }
+}
+
+// ═══════════════ BROWSER NOTIFICATIONS ═══════════════
+async function requestNotificationPermission(){
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+function getTasksAlert(){
+  const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0; });
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10; });
+  return { overdue, dueSoon };
+}
+
+async function showTaskNotifications(){
+  const granted = await requestNotificationPermission();
+  if(!granted) return;
+  const { overdue, dueSoon } = getTasksAlert();
+  if(overdue.length){
+    new Notification('⚠️ PS Expense — Overdue Tasks', {
+      body: overdue.map(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return `• ${t.name} (${Math.abs(d)} days overdue)`; }).join('\n'),
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag: 'overdue-tasks',
+      renotify: true
+    });
+  }
+  if(dueSoon.length){
+    setTimeout(()=>{
+      new Notification('🔔 PS Expense — Due Soon', {
+        body: dueSoon.map(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return `• ${t.name} (${d===0?'today':d+' days left'})`; }).join('\n'),
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
+        tag: 'due-soon-tasks',
+        renotify: true
+      });
+    }, 1500);
+  }
+}
+
+// Schedule daily notification via service worker (if supported)
+async function scheduleDailyNotification(){
+  if(!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  // Store check time in localStorage — check once per day
+  const lastCheck = localStorage.getItem('lastNotifCheck');
+  const today = new Date().toISOString().split('T')[0];
+  if(lastCheck !== today){
+    localStorage.setItem('lastNotifCheck', today);
+    await showTaskNotifications();
+  }
+}
+
+// ═══════════════ TELEGRAM BOT ═══════════════
+let telegramConfig = JSON.parse(localStorage.getItem('telegramConfig')||'null');
+
+function openTelegramSetup(){
+  document.getElementById('telegramSetupModal').classList.add('open');
+  if(telegramConfig){
+    document.getElementById('tgToken').value = telegramConfig.token||'';
+    document.getElementById('tgChatId').value = telegramConfig.chatId||'';
+  }
+}
+function closeTelegramSetup(){
+  document.getElementById('telegramSetupModal').classList.remove('open');
+}
+
+async function saveTelegramConfig(){
+  const token = document.getElementById('tgToken').value.trim();
+  const chatId = document.getElementById('tgChatId').value.trim();
+  if(!token||!chatId){ alert('Please fill both Bot Token and Chat ID'); return; }
+  telegramConfig = { token, chatId };
+  localStorage.setItem('telegramConfig', JSON.stringify(telegramConfig));
+  // Test message
+  const sent = await sendTelegram('✅ PS Expense connected! You will receive task reminders here.');
+  if(sent){ alert('✅ Telegram connected! Test message sent.'); closeTelegramSetup(); }
+  else { alert('❌ Failed. Check your Token and Chat ID.'); }
+}
+
+async function sendTelegram(message){
+  if(!telegramConfig) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${telegramConfig.token}/sendMessage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: telegramConfig.chatId, text: message, parse_mode:'HTML' })
+    });
+    const data = await res.json();
+    return data.ok;
+  } catch(e){ console.error('Telegram error', e); return false; }
+}
+
+async function sendTelegramTaskReport(){
+  if(!telegramConfig){ openTelegramSetup(); return; }
+  const { overdue, dueSoon } = getTasksAlert();
+  if(!overdue.length && !dueSoon.length){
+    await sendTelegram('✅ <b>PS Expense — All Tasks On Track!</b>\n\nNo overdue or due-soon tasks. 👍');
+    alert('✅ Telegram message sent!');
+    return;
+  }
+  let msg = '🔔 <b>PS Expense — Task Reminder</b>\n\n';
+  if(overdue.length){
+    msg += '⚠️ <b>OVERDUE:</b>\n';
+    overdue.forEach(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); msg+=`• ${t.name} — ${Math.abs(d)} days overdue\n`; });
+    msg += '\n';
+  }
+  if(dueSoon.length){
+    msg += '🟡 <b>DUE SOON (within 10 days):</b>\n';
+    dueSoon.forEach(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); msg+=`• ${t.name} — ${d===0?'Due today':d+' days left'}\n`; });
+  }
+  msg += `\n<i>Sent from PS Expense App</i>`;
+  const sent = await sendTelegram(msg);
+  alert(sent ? '✅ Telegram reminder sent!' : '❌ Failed to send. Check connection.');
+}
+
+// Auto send Telegram once per day on app open
+async function autoTelegramDaily(){
+  if(!telegramConfig) return;
+  const lastTg = localStorage.getItem('lastTgSent');
+  const today = new Date().toISOString().split('T')[0];
+  if(lastTg === today) return;
+  const { overdue, dueSoon } = getTasksAlert();
+  if(!overdue.length && !dueSoon.length) return;
+  const sent = await sendTelegramTaskReport();
+  if(sent !== false) localStorage.setItem('lastTgSent', today);
+}
+
+// ═══════════════ LOAD FROM CLOUD ═══════════════
+// Load from Firebase on startup — cloud is source of truth
+async function loadFromCloud(){
+  try {
+    const doc = await db.collection("userdata").doc("ps_enterprise_data").get();
+    if(doc.exists){
+      const data = doc.data();
+      if(data.transactions){ transactions=data.transactions; localStorage.setItem('txv2',JSON.stringify(transactions)); }
+      if(data.stock)       { stock=data.stock;               localStorage.setItem('stockv2',JSON.stringify(stock)); }
+      if(data.tasks)       { tasks=data.tasks;               localStorage.setItem('tasks_v1',JSON.stringify(tasks)); }
+    }
+  } catch(e){ console.log("Offline — using local data"); }
+  renderHome();
+  // Trigger notifications after data loads
+  scheduleDailyNotification();
+  autoTelegramDaily();
+  showNotifBannerIfNeeded();
+}
+loadFromCloud();
 </script>
 </body>
 </html>
