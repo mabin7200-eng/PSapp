@@ -1402,7 +1402,6 @@ function fmtDate(d){if(!d)return '—';const[y,m,day]=d.split('-');return day+'/
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
 document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
-document.getElementById('incomeModal').addEventListener('click',function(e){if(e.target===this)closeIncomeModal();});
 
 // ═══════════════ INCOME ═══════════════
 let incomes       = JSON.parse(localStorage.getItem('incomes_v1')||'[]');
@@ -1413,7 +1412,7 @@ function openIncome(){ showScreen('income'); renderIncome(); }
 
 function setIncomeFilter(f, el){
   incomeFilter = f;
-  document.querySelectorAll('#screen-income .filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.income-filter').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   renderIncome();
 }
@@ -1421,8 +1420,9 @@ function clearIncomeFilters(){
   document.getElementById('incomeFilterFrom').value='';
   document.getElementById('incomeFilterTo').value='';
   incomeFilter='all';
-  document.querySelectorAll('#screen-income .filter-chip').forEach(c=>c.classList.remove('active'));
-  document.querySelector('#screen-income .filter-chip').classList.add('active');
+  document.querySelectorAll('.income-filter').forEach(c=>c.classList.remove('active'));
+  const first = document.querySelector('.income-filter');
+  if(first) first.classList.add('active');
   renderIncome();
 }
 
@@ -1509,9 +1509,9 @@ function openIncomeModal(id){
     document.getElementById('incomePayType').value   = 'Cash';
     document.getElementById('incomeRemarks').value   = '';
   }
-  document.getElementById('incomeModal').classList.add('open');
+  document.getElementById('incomeModal').style.display='flex';
 }
-function closeIncomeModal(){ document.getElementById('incomeModal').classList.remove('open'); }
+function closeIncomeModal(){ document.getElementById('incomeModal').style.display='none'; }
 
 async function saveIncome(){
   const editId    = document.getElementById('incomeEditId').value;
@@ -1656,6 +1656,9 @@ async function inboxDone(id){
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
+  // Attach income modal listener here — HTML exists by now
+  const incMod = document.getElementById('incomeModal');
+  if(incMod) incMod.addEventListener('click',function(e){if(e.target===this)closeIncomeModal();});
   try {
     const doc = await db.collection("userdata").doc("ps_enterprise_data").get();
     if(doc.exists){
@@ -1719,10 +1722,10 @@ loadFromCloud();
 
     <!-- Filter chips -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <div class="filter-chip active" onclick="setIncomeFilter('all',this)">All</div>
-      <div class="filter-chip" onclick="setIncomeFilter('Cash',this)">💵 Cash</div>
-      <div class="filter-chip" onclick="setIncomeFilter('Bank',this)">🏦 Bank</div>
-      <div class="filter-chip" onclick="setIncomeFilter('Cheque',this)">📝 Cheque</div>
+      <div class="filter-chip income-filter active" onclick="setIncomeFilter('all',this)">All</div>
+      <div class="filter-chip income-filter" onclick="setIncomeFilter('Cash',this)">💵 Cash</div>
+      <div class="filter-chip income-filter" onclick="setIncomeFilter('Bank',this)">🏦 Bank</div>
+      <div class="filter-chip income-filter" onclick="setIncomeFilter('Cheque',this)">📝 Cheque</div>
     </div>
 
     <!-- Date filters -->
@@ -1740,18 +1743,18 @@ loadFromCloud();
 </div>
 
 <!-- INCOME ADD/EDIT MODAL -->
-<div class="task-modal-ov" id="incomeModal">
-  <div class="task-modal-box" style="max-width:480px;">
-    <div class="modal-hdr">
-      <h2 id="incomeModalTitle">Add Income</h2>
-      <button class="modal-close" onclick="closeIncomeModal()">✕</button>
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;overflow-y:auto;" id="incomeModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin:auto;">
+    <div style="padding:16px 18px 12px;border-bottom:1px solid #e2e5eb;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <h2 id="incomeModalTitle" style="font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;">Add Income</h2>
+      <button onclick="closeIncomeModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;padding:4px 8px;border-radius:6px;">✕</button>
     </div>
-    <div class="modal-body" style="padding:16px 18px;">
+    <div style="padding:16px 18px;">
       <input type="hidden" id="incomeEditId"/>
-      <div class="form-row c2" style="margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
           <label>ID</label>
-          <input type="text" id="incomeIdDisp" readonly style="background:#f0f2f5;color:var(--muted);font-weight:700;"/>
+          <input type="text" id="incomeIdDisp" readonly style="background:#f0f2f5;color:#6b7280;font-weight:700;"/>
         </div>
         <div>
           <label>Date</label>
@@ -1767,7 +1770,7 @@ loadFromCloud();
         <label>Particular (Description)</label>
         <input type="text" id="incomeParticular" placeholder="e.g. Project payment, Salary, Sale..."/>
       </div>
-      <div class="form-row c2" style="margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
           <label>Amount (₹)</label>
           <input type="number" id="incomeAmount" min="0" step="0.01" placeholder="0.00"/>
@@ -1783,7 +1786,7 @@ loadFromCloud();
       </div>
       <div style="margin-bottom:14px;">
         <label>Remarks (Optional)</label>
-        <textarea id="incomeRemarks" placeholder="Any additional notes..."></textarea>
+        <textarea id="incomeRemarks" placeholder="Any additional notes..." style="min-height:60px;"></textarea>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-success btn-full" onclick="saveIncome()">✓ Save Income</button>
