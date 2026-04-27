@@ -276,6 +276,9 @@ tr:hover td{background:var(--surface2);}
 .home-card.task-card-home{background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047;}
 .home-card.task-card-home::after{background:#ca8a04;}
 .home-card.task-card-home .home-card-amount{color:#92400e;}
+.home-card.income-card{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6ee7b7;}
+.home-card.income-card::after{background:#059669;}
+.home-card.income-card .home-card-amount{color:#065f46;}
 
 /* EMPTY */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted2);}
@@ -333,6 +336,13 @@ tr:hover td{background:var(--surface2);}
       <div class="home-card-label">Task Reminders</div>
       <div class="home-card-amount" id="homeTaskCount">0</div>
       <div class="home-card-sub" id="homeTaskSub">tasks — <span id="homeTaskDue">0 due soon</span></div>
+      <span class="home-card-arrow">›</span>
+    </div>
+    <div class="home-card income-card" onclick="openIncome()" style="grid-column:1/-1;">
+      <span class="home-card-icon">💰</span>
+      <div class="home-card-label">Total Income</div>
+      <div class="home-card-amount" id="homeIncomeTotal">₹0</div>
+      <div class="home-card-sub" id="homeIncomeCount">0 entries</div>
       <span class="home-card-arrow">›</span>
     </div>
   </div>
@@ -630,6 +640,8 @@ async function save() {
       transactions: transactions,
       stock: stock,
       tasks: tasks,
+      incomes: incomes,
+      incomeNames: incomeNames,
       lastUpdated: new Date().toISOString()
     });
   } catch(e) { console.error("Cloud Sync Error", e); }
@@ -646,6 +658,7 @@ function openExpense(){showScreen('expense');renderExpense();}
 function openStock(){showScreen('stock');renderStock();}
 function openAdd(){showScreen('add');initForm();}
 function closeAdd(){showScreen('expense');renderExpense();}
+function openIncome(){showScreen('income');renderIncome();}
 
 // ═══════════════ HOME ═══════════════
 function renderHome(){
@@ -657,6 +670,13 @@ function renderHome(){
   document.getElementById('homeExpCount').textContent = transactions.length+' transaction'+(transactions.length!==1?'s':'');
   document.getElementById('homeStockCount').textContent = stock.length;
   document.getElementById('homeStockSub').textContent = stock.length+' item'+(stock.length!==1?'s':'')+' tracked';
+
+  // Income summary
+  const incomeTotal = incomes.reduce((s,i)=>s+(i.amount||0),0);
+  const hIt = document.getElementById('homeIncomeTotal');
+  const hIc = document.getElementById('homeIncomeCount');
+  if(hIt) hIt.textContent = fmt(incomeTotal);
+  if(hIc) hIc.textContent = incomes.length+' entr'+(incomes.length===1?'y':'ies');
 
   // Task summary
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
@@ -1382,6 +1402,178 @@ function fmtDate(d){if(!d)return '—';const[y,m,day]=d.split('-');return day+'/
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
 document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
+document.getElementById('incomeModal').addEventListener('click',function(e){if(e.target===this)closeIncomeModal();});
+
+// ═══════════════ INCOME ═══════════════
+let incomes       = JSON.parse(localStorage.getItem('incomes_v1')||'[]');
+let incomeNames   = JSON.parse(localStorage.getItem('incomeNames')||'[]');
+let incomeFilter  = 'all';
+
+function openIncome(){ showScreen('income'); renderIncome(); }
+
+function setIncomeFilter(f, el){
+  incomeFilter = f;
+  document.querySelectorAll('#screen-income .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderIncome();
+}
+function clearIncomeFilters(){
+  document.getElementById('incomeFilterFrom').value='';
+  document.getElementById('incomeFilterTo').value='';
+  incomeFilter='all';
+  document.querySelectorAll('#screen-income .filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('#screen-income .filter-chip').classList.add('active');
+  renderIncome();
+}
+
+function renderIncome(){
+  // Summary always from all incomes
+  const totalAll = incomes.reduce((s,i)=>s+(i.amount||0),0);
+  const cashAmt  = incomes.filter(i=>i.payType==='Cash').reduce((s,i)=>s+(i.amount||0),0);
+  const bankAmt  = incomes.filter(i=>i.payType==='Bank').reduce((s,i)=>s+(i.amount||0),0);
+  const cheqAmt  = incomes.filter(i=>i.payType==='Cheque').reduce((s,i)=>s+(i.amount||0),0);
+
+  document.getElementById('incomeGrandTotal').textContent = fmt(totalAll);
+  document.getElementById('incomeTotalCount').textContent = incomes.length;
+  document.getElementById('incomeCash').textContent   = fmt(cashAmt);
+  document.getElementById('incomeBank').textContent   = fmt(bankAmt);
+  document.getElementById('incomeCheque').textContent = fmt(cheqAmt);
+
+  // Update home card
+  const hIt = document.getElementById('homeIncomeTotal');
+  const hIc = document.getElementById('homeIncomeCount');
+  if(hIt) hIt.textContent = fmt(totalAll);
+  if(hIc) hIc.textContent = incomes.length+' entr'+(incomes.length===1?'y':'ies');
+
+  // Filtered list
+  let list = [...incomes];
+  if(incomeFilter !== 'all') list = list.filter(i=>i.payType===incomeFilter);
+  const from = document.getElementById('incomeFilterFrom').value;
+  const to   = document.getElementById('incomeFilterTo').value;
+  if(from) list = list.filter(i=>i.date>=from);
+  if(to)   list = list.filter(i=>i.date<=to);
+  list.sort((a,b)=>b.id-a.id);
+
+  const payIcon = {Cash:'💵',Bank:'🏦',Cheque:'📝'};
+  const payColor= {Cash:'#065f46',Bank:'#1a56db',Cheque:'#5521b5'};
+  const payBg   = {Cash:'#def7ec',Bank:'#ebf0ff',Cheque:'#edebff'};
+
+  const el = document.getElementById('incomeList');
+  if(!list.length){
+    el.innerHTML=`<div class="empty-state"><span class="ei">💰</span>No income entries yet.<br>Tap <b>+</b> to add.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(inc=>`
+    <div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);padding:14px 16px;margin-bottom:10px;border:1px solid #e2e5eb;border-left:4px solid ${payColor[inc.payType]||'#065f46'};cursor:pointer;" onclick="openIncomeModal('${inc.id}')">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:0.65rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:#ebf0ff;color:#1a56db;padding:2px 8px;border-radius:20px;flex-shrink:0;">#${padIncome(inc.id)}</span>
+        <span style="font-weight:700;font-size:0.95rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${inc.name||'—'}</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#065f46;flex-shrink:0;">+${fmt(inc.amount)}</span>
+      </div>
+      <div style="margin-top:7px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span style="background:${payBg[inc.payType]||'#def7ec'};color:${payColor[inc.payType]||'#065f46'};font-size:0.65rem;font-weight:700;padding:2px 9px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;">${payIcon[inc.payType]||''} ${inc.payType}</span>
+        <span style="font-size:0.7rem;color:#9ca3af;">${fmtDate(inc.date)}</span>
+        ${inc.particular?`<span style="font-size:0.7rem;color:#6b7280;">${inc.particular}</span>`:''}
+      </div>
+      ${inc.remarks?`<div style="font-size:0.7rem;color:#9ca3af;margin-top:5px;font-style:italic;">📝 ${inc.remarks}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function padIncome(n){ return String(n).padStart(4,'0'); }
+
+function openIncomeModal(id){
+  const editId = id||'';
+  document.getElementById('incomeEditId').value = editId;
+  document.getElementById('incomeModalTitle').textContent = id ? 'Edit Income' : 'Add Income';
+  // Populate name datalist
+  document.getElementById('incomeNamesList').innerHTML = incomeNames.map(n=>`<option value="${n}"/>`).join('');
+
+  if(id){
+    const inc = incomes.find(i=>String(i.id)===String(id));
+    if(!inc) return;
+    document.getElementById('incomeIdDisp').value    = '#'+padIncome(inc.id);
+    document.getElementById('incomeDate').value      = inc.date||'';
+    document.getElementById('incomeName').value      = inc.name||'';
+    document.getElementById('incomeParticular').value= inc.particular||'';
+    document.getElementById('incomeAmount').value    = inc.amount||'';
+    document.getElementById('incomePayType').value   = inc.payType||'Cash';
+    document.getElementById('incomeRemarks').value   = inc.remarks||'';
+  } else {
+    const nextId = incomes.length>0 ? Math.max(...incomes.map(i=>i.id))+1 : 1;
+    document.getElementById('incomeIdDisp').value    = '#'+padIncome(nextId);
+    document.getElementById('incomeDate').valueAsDate = new Date();
+    document.getElementById('incomeName').value      = '';
+    document.getElementById('incomeParticular').value= '';
+    document.getElementById('incomeAmount').value    = '';
+    document.getElementById('incomePayType').value   = 'Cash';
+    document.getElementById('incomeRemarks').value   = '';
+  }
+  document.getElementById('incomeModal').classList.add('open');
+}
+function closeIncomeModal(){ document.getElementById('incomeModal').classList.remove('open'); }
+
+async function saveIncome(){
+  const editId    = document.getElementById('incomeEditId').value;
+  const name      = document.getElementById('incomeName').value.trim();
+  const date      = document.getElementById('incomeDate').value;
+  const particular= document.getElementById('incomeParticular').value.trim();
+  const amount    = parseFloat(document.getElementById('incomeAmount').value)||0;
+  const payType   = document.getElementById('incomePayType').value;
+  const remarks   = document.getElementById('incomeRemarks').value.trim();
+
+  if(!name)   { alert('Enter Name'); return; }
+  if(!date)   { alert('Select Date'); return; }
+  if(!amount) { alert('Enter Amount'); return; }
+
+  if(editId){
+    const idx = incomes.findIndex(i=>String(i.id)===String(editId));
+    if(idx>-1) incomes[idx]={...incomes[idx], name, date, particular, amount, payType, remarks};
+  } else {
+    const nextId = incomes.length>0 ? Math.max(...incomes.map(i=>i.id))+1 : 1;
+    incomes.push({ id:nextId, name, date, particular, amount, payType, remarks, createdAt:Date.now() });
+  }
+
+  if(!incomeNames.includes(name)) incomeNames.push(name);
+  localStorage.setItem('incomes_v1',  JSON.stringify(incomes));
+  localStorage.setItem('incomeNames', JSON.stringify(incomeNames));
+
+  try {
+    await db.collection("userdata").doc("ps_enterprise_data").update({ incomes, incomeNames });
+  } catch(e){ console.log('Income sync error',e); }
+
+  closeIncomeModal();
+  renderIncome();
+  renderHome();
+}
+
+async function deleteIncome(id){
+  if(!confirm('Delete this income entry?')) return;
+  incomes = incomes.filter(i=>String(i.id)!==String(id));
+  localStorage.setItem('incomes_v1', JSON.stringify(incomes));
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ incomes }); } catch(e){}
+  renderIncome(); renderHome();
+}
+
+function saveIncomePDF(){
+  const list = [...incomes].sort((a,b)=>b.id-a.id);
+  const total = list.reduce((s,i)=>s+(i.amount||0),0);
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Income Report</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;margin:24px;}h1{font-size:18px;margin-bottom:4px;}.sub{color:#888;font-size:11px;margin-bottom:16px;}table{width:100%;border-collapse:collapse;}th{background:#f3f4f6;padding:8px 10px;text-align:left;border:1px solid #e5e7eb;font-size:11px;}td{padding:8px 10px;border:1px solid #e5e7eb;font-size:11px;}.total{font-weight:700;background:#def7ec;}</style>
+  </head><body>
+  <h1>💰 Income Report</h1>
+  <div class="sub">Generated: ${new Date().toLocaleString('en-IN')} | Total: ${list.length} entries</div>
+  <div style="background:#065f46;color:#fff;padding:12px 16px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;">
+    <span style="font-weight:700;">Total Income</span><span style="font-size:18px;font-weight:800;">₹${total.toFixed(2)}</span>
+  </div>
+  <table><thead><tr><th>#</th><th>ID</th><th>Date</th><th>Name</th><th>Particular</th><th>Amount</th><th>Payment</th><th>Remarks</th></tr></thead><tbody>
+  ${list.map((inc,i)=>`<tr><td>${i+1}</td><td>#${padIncome(inc.id)}</td><td>${fmtDate(inc.date)}</td><td><b>${inc.name||'—'}</b></td><td>${inc.particular||'—'}</td><td><b>₹${(inc.amount||0).toFixed(2)}</b></td><td>${inc.payType||'—'}</td><td>${inc.remarks||'—'}</td></tr>`).join('')}
+  <tr class="total"><td colspan="5" style="text-align:right;">Grand Total</td><td>₹${total.toFixed(2)}</td><td colspan="2"></td></tr>
+  </tbody></table>
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  win.document.close();
+}
 
 // ═══════════════ GLOBAL INBOX PANEL ═══════════════
 function updateBellBadge(count){
@@ -1471,6 +1663,8 @@ async function loadFromCloud(){
       if(data.transactions){ transactions=data.transactions; localStorage.setItem('txv2',JSON.stringify(transactions)); }
       if(data.stock)       { stock=data.stock;               localStorage.setItem('stockv2',JSON.stringify(stock)); }
       if(data.tasks)       { tasks=data.tasks;               localStorage.setItem('tasks_v1',JSON.stringify(tasks)); }
+      if(data.incomes)     { incomes=data.incomes;           localStorage.setItem('incomes_v1',JSON.stringify(incomes)); }
+      if(data.incomeNames) { incomeNames=data.incomeNames;   localStorage.setItem('incomeNames',JSON.stringify(incomeNames)); }
     }
   } catch(e){ console.log("Offline — using local data"); }
   // Update bell badge on load
@@ -1481,6 +1675,123 @@ async function loadFromCloud(){
 }
 loadFromCloud();
 </script>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: INCOME
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-income">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <span class="topbar-title">💰 Income</span>
+    <div class="topbar-actions">
+      <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge4"></span></button>
+      <button class="topbar-btn" onclick="saveIncomePDF()">⬇ PDF</button>
+    </div>
+  </div>
+
+  <!-- Income Summary Bar -->
+  <div style="padding:14px 16px 0;">
+    <div style="background:#065f46;color:#fff;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.7;font-family:'Barlow Condensed',sans-serif;">Total Income</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:800;" id="incomeGrandTotal">₹0.00</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.7rem;opacity:0.7;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:1px;">Entries</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:800;" id="incomeTotalCount">0</div>
+      </div>
+    </div>
+    <!-- Payment type summary -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+      <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #e2e5eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <div style="font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-family:'Barlow Condensed',sans-serif;">💵 Cash</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:#111;margin-top:3px;" id="incomeCash">₹0</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #e2e5eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <div style="font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-family:'Barlow Condensed',sans-serif;">🏦 Bank</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:#111;margin-top:3px;" id="incomeBank">₹0</div>
+      </div>
+      <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #e2e5eb;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <div style="font-size:0.63rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-family:'Barlow Condensed',sans-serif;">📝 Cheque</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:#111;margin-top:3px;" id="incomeCheque">₹0</div>
+      </div>
+    </div>
+
+    <!-- Filter chips -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="filter-chip active" onclick="setIncomeFilter('all',this)">All</div>
+      <div class="filter-chip" onclick="setIncomeFilter('Cash',this)">💵 Cash</div>
+      <div class="filter-chip" onclick="setIncomeFilter('Bank',this)">🏦 Bank</div>
+      <div class="filter-chip" onclick="setIncomeFilter('Cheque',this)">📝 Cheque</div>
+    </div>
+
+    <!-- Date filters -->
+    <div class="filter-date-row" style="margin-bottom:12px;">
+      <div><label>From Date</label><input type="date" id="incomeFilterFrom" onchange="renderIncome()"/></div>
+      <div><label>To Date</label><input type="date" id="incomeFilterTo" onchange="renderIncome()"/></div>
+      <button class="clear-filter-btn" onclick="clearIncomeFilters()">✕ Clear</button>
+    </div>
+  </div>
+
+  <div style="padding:0 16px 16px;" id="incomeList"></div>
+
+  <!-- FAB -->
+  <button class="fab visible" onclick="openIncomeModal(null)">+</button>
+</div>
+
+<!-- INCOME ADD/EDIT MODAL -->
+<div class="task-modal-ov" id="incomeModal">
+  <div class="task-modal-box" style="max-width:480px;">
+    <div class="modal-hdr">
+      <h2 id="incomeModalTitle">Add Income</h2>
+      <button class="modal-close" onclick="closeIncomeModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 18px;">
+      <input type="hidden" id="incomeEditId"/>
+      <div class="form-row c2" style="margin-bottom:10px;">
+        <div>
+          <label>ID</label>
+          <input type="text" id="incomeIdDisp" readonly style="background:#f0f2f5;color:var(--muted);font-weight:700;"/>
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="incomeDate"/>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label>Name (Party / Person)</label>
+        <input type="text" id="incomeName" list="incomeNamesList" placeholder="Type or select name..." autocomplete="off"/>
+        <datalist id="incomeNamesList"></datalist>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label>Particular (Description)</label>
+        <input type="text" id="incomeParticular" placeholder="e.g. Project payment, Salary, Sale..."/>
+      </div>
+      <div class="form-row c2" style="margin-bottom:10px;">
+        <div>
+          <label>Amount (₹)</label>
+          <input type="number" id="incomeAmount" min="0" step="0.01" placeholder="0.00"/>
+        </div>
+        <div>
+          <label>Payment Type</label>
+          <select id="incomePayType">
+            <option value="Cash">💵 Cash</option>
+            <option value="Bank">🏦 Bank Transfer</option>
+            <option value="Cheque">📝 Cheque</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label>Remarks (Optional)</label>
+        <textarea id="incomeRemarks" placeholder="Any additional notes..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-success btn-full" onclick="saveIncome()">✓ Save Income</button>
+        <button class="btn btn-ghost" onclick="closeIncomeModal()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- GLOBAL INBOX PANEL -->
 <div class="inbox-panel" id="inboxPanel">
