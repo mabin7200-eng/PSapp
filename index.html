@@ -664,7 +664,7 @@ function renderHome(){
   document.getElementById('homeTaskCount').textContent = tasks.length;
   document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
   document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue ⚠️' : dueSoon>0 ? dueSoon+' due soon' : 'all on track ✅';
-
+  updateBellBadge(overdue+dueSoon);
   renderInbox();
 }
 
@@ -1213,8 +1213,8 @@ function renderTask(){
     ${dueSoon>0?`<span style="background:var(--orange-light);border:1px solid #fdba74;border-radius:20px;padding:5px 14px;font-size:0.78rem;color:var(--orange);font-weight:700;"><b>${dueSoon}</b> due within 10 days</span>`:''}
   </div>`;
 
-  // Update global inbox bell badge
-  renderInboxPanel();
+  // Update bell badge count
+  updateBellBadge(overdue + dueSoon);
 
   if(!el) return;
   if(!tasks.length){
@@ -1383,6 +1383,84 @@ document.getElementById('detailModal').addEventListener('click',function(e){if(e
 document.getElementById('unitOv').addEventListener('click',function(e){if(e.target===this)closeUnitModal();});
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeTaskModal();});
 
+// ═══════════════ GLOBAL INBOX PANEL ═══════════════
+function updateBellBadge(count){
+  // Update all bell badges across all screens
+  ['homeBellBadge','bellBadge1','bellBadge2','bellBadge3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(count > 0){
+      el.textContent = count;
+      el.classList.add('show');
+    } else {
+      el.textContent = '';
+      el.classList.remove('show');
+    }
+  });
+}
+
+function openInbox(){
+  // Build inbox content from tasks
+  const alerts = [];
+  tasks.forEach(t=>{
+    const d = taskDaysLeft(t.lastDate, t.freq);
+    if(d === null) return;
+    if(d < 0)        alerts.push({...t, d, type:'overdue'});
+    else if(d <= 10) alerts.push({...t, d, type:'due-soon'});
+  });
+  alerts.sort((a,b)=>a.d - b.d);
+
+  const body  = document.getElementById('inboxPanelBody');
+  const badge = document.getElementById('inboxPanelBadge');
+
+  if(badge) badge.textContent = alerts.length ? alerts.length + ' alert' + (alerts.length!==1?'s':'') : '';
+
+  if(!alerts.length){
+    body.innerHTML = `<div style="background:var(--green-light);border:1px solid #6ee7b7;border-radius:10px;padding:16px;text-align:center;font-size:0.88rem;color:var(--green);font-weight:600;">✅ All tasks on track — no alerts!</div>`;
+  } else {
+    body.innerHTML = alerts.map(t=>{
+      const isOver = t.type==='overdue';
+      const icon   = isOver ? '🔴' : '🟡';
+      const msg    = isOver
+        ? `${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} overdue!`
+        : t.d===0 ? '⚡ Due TODAY!'
+        : t.d===1 ? '⚡ Due Tomorrow!'
+        : `Due in ${t.d} days`;
+      const nextD = taskNextDate(t.lastDate, t.freq);
+      return `<div style="background:${isOver?'var(--red-light)':'var(--orange-light)'};border:1px solid ${isOver?'#fca5a5':'#fdba74'};border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;">
+        <span style="font-size:1.3rem;flex-shrink:0;">${icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.95rem;font-family:'Barlow Condensed',sans-serif;">${t.name}</div>
+          <div style="font-size:0.8rem;color:${isOver?'var(--red)':'var(--orange)'};font-weight:700;margin-top:2px;">${msg}</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">⏭ Next: ${nextD?fmtDate(nextD):'—'} &nbsp;·&nbsp; Every ${t.freq} days</div>
+          ${t.remarks?`<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">📝 ${t.remarks}</div>`:''}
+        </div>
+        <button onclick="inboxDone('${t.id}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:700;font-size:0.75rem;cursor:pointer;white-space:nowrap;flex-shrink:0;">✓ Done</button>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('inboxPanel').classList.add('open');
+}
+
+function closeInbox(){
+  document.getElementById('inboxPanel').classList.remove('open');
+}
+
+async function inboxDone(id){
+  const idx = tasks.findIndex(t=>t.id===id);
+  if(idx<0) return;
+  tasks[idx].lastDate = new Date().toISOString().split('T')[0];
+  localStorage.setItem('tasks_v1', JSON.stringify(tasks));
+  try{ await db.collection("userdata").doc("ps_enterprise_data").update({tasks}); }catch(e){}
+  // Refresh badge and inbox
+  const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  updateBellBadge(overdue+dueSoon);
+  openInbox(); // refresh panel content
+  renderHome();
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
@@ -1395,9 +1473,28 @@ async function loadFromCloud(){
       if(data.tasks)       { tasks=data.tasks;               localStorage.setItem('tasks_v1',JSON.stringify(tasks)); }
     }
   } catch(e){ console.log("Offline — using local data"); }
+  // Update bell badge on load
+  const ov = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
+  const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  updateBellBadge(ov+ds);
   renderHome();
 }
 loadFromCloud();
 </script>
+
+<!-- GLOBAL INBOX PANEL -->
+<div class="inbox-panel" id="inboxPanel">
+  <div class="inbox-backdrop" onclick="closeInbox()"></div>
+  <div class="inbox-drawer">
+    <div class="inbox-drawer-hdr">
+      <div class="inbox-drawer-title">✉️ Alerts &amp; Reminders <span id="inboxPanelBadge" style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:0.75rem;margin-left:6px;"></span></div>
+      <button class="inbox-drawer-close" onclick="closeInbox()">✕</button>
+    </div>
+    <div class="inbox-drawer-body" id="inboxPanelBody">
+      <div style="text-align:center;color:var(--muted2);padding:20px;">Loading...</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
