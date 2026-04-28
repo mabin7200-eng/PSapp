@@ -347,6 +347,17 @@ tr:hover td{background:var(--surface2);}
     </div>
   </div>
 
+  <!-- Cloudinary Setup Card -->
+  <div style="padding:0 16px 8px;">
+    <div style="background:#fff;border-radius:12px;border:1px solid #e2e5eb;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:1px;color:#6b7280;">☁️ Image Upload</div>
+        <div style="font-size:0.8rem;font-weight:600;color:#374151;margin-top:2px;" id="cloudinaryStatus">Not configured — tap Setup</div>
+      </div>
+      <button onclick="showCloudinarySetup()" style="background:#1a56db;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">⚙️ Setup</button>
+    </div>
+  </div>
+
   <!-- INBOX / ALERTS -->
   <div class="inbox-wrap" id="inboxWrap">
     <div class="inbox-title">
@@ -469,6 +480,30 @@ tr:hover td{background:var(--surface2);}
       <div style="margin-bottom:14px;">
         <label>Note (Optional)</label>
         <textarea id="txNote" placeholder="Additional notes..."></textarea>
+      </div>
+      <!-- IMAGE / PDF UPLOAD (Optional) -->
+      <div style="margin-bottom:14px;">
+        <label>Attach Bill / Document (Optional)</label>
+        <div style="border:2px dashed #e2e5eb;border-radius:10px;padding:14px;text-align:center;background:#f7f8fa;position:relative;" id="txUploadArea">
+          <input type="file" id="txFileInput" accept="image/*,.pdf" style="display:none;" onchange="handleFileSelect('tx',this)"/>
+          <div id="txUploadPrompt">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📎</div>
+            <div style="font-size:0.82rem;color:#6b7280;margin-bottom:8px;">Tap to attach image or PDF</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('txFileInput').click()">Choose File</button>
+          </div>
+          <div id="txFilePreview" style="display:none;">
+            <div id="txPreviewContent" style="margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('txFileInput').click()">Change</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearFile('tx')">Remove</button>
+            </div>
+          </div>
+          <div id="txUploadProgress" style="display:none;font-size:0.82rem;color:#1a56db;padding:8px;">
+            <span style="animation:pulse 1s infinite;">⏳ Uploading...</span>
+          </div>
+        </div>
+        <input type="hidden" id="txAttachUrl" value=""/>
+        <input type="hidden" id="txAttachType" value=""/>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-success btn-full" onclick="saveTransaction()">✓ Save</button>
@@ -842,7 +877,9 @@ function openDetail(id){
   document.getElementById('detailThead').innerHTML=headers.map(h=>`<th>${h}</th>`).join('');
   document.getElementById('detailTbody').innerHTML=rows;
   document.getElementById('detailTfoot').innerHTML=foot;
-  document.getElementById('detailNote').textContent=tx.note?'📝 Note: '+tx.note:'';
+  document.getElementById('detailNote').innerHTML =
+    (tx.note ? `<div style="font-size:0.8rem;color:var(--muted);font-style:italic;margin-bottom:6px;">📝 ${tx.note}</div>` : '') +
+    attachmentHTML(tx.attachUrl, tx.attachType);
   document.getElementById('detailModal').classList.add('open');
 }
 function closeDetail(){document.getElementById('detailModal').classList.remove('open');currentDetailId=null;}
@@ -1069,6 +1106,8 @@ function saveTransaction(){
   const name=document.getElementById('txName').value.trim();
   const date=document.getElementById('txDate').value;
   const note=document.getElementById('txNote').value.trim();
+  const attachUrl  = document.getElementById('txAttachUrl').value;
+  const attachType = document.getElementById('txAttachType').value;
   if(!name){alert('Enter Name');return;}
   if(!date){alert('Select Date');return;}
   if(!currentCat){alert('Select Category');return;}
@@ -1077,7 +1116,7 @@ function saveTransaction(){
 
   const nextId=transactions.length>0?Math.max(...transactions.map(t=>t.id))+1:1;
   const grandTotal=currentRows.reduce((s,r)=>s+(r.total||0),0);
-  const tx={id:nextId,name,date,note,category:currentCat,items:currentRows.map(r=>({...r})),grandTotal,createdAt:Date.now()};
+  const tx={id:nextId,name,date,note,category:currentCat,items:currentRows.map(r=>({...r})),grandTotal,createdAt:Date.now(),attachUrl:attachUrl||'',attachType:attachType||''};
   transactions.push(tx);
 
   if(!names.includes(name)) names.push(name);
@@ -1099,6 +1138,7 @@ function saveTransaction(){
   // Reset UI
   document.getElementById('txName').value='';
   document.getElementById('txNote').value='';
+  resetUpload('tx');
   showScreen('expense'); renderExpense(); renderHome();
   alert('✅ Transaction #'+pad(nextId)+' saved!');
 }
@@ -1476,6 +1516,7 @@ function renderIncome(){
         ${inc.particular?`<span style="font-size:0.7rem;color:#6b7280;">${inc.particular}</span>`:''}
       </div>
       ${inc.remarks?`<div style="font-size:0.7rem;color:#9ca3af;margin-top:5px;font-style:italic;">📝 ${inc.remarks}</div>`:''}
+      ${inc.attachUrl?`<div style="margin-top:6px;">${attachmentHTML(inc.attachUrl, inc.attachType)}</div>`:''}
     </div>
   `).join('');
 }
@@ -1521,6 +1562,8 @@ async function saveIncome(){
   const amount    = parseFloat(document.getElementById('incomeAmount').value)||0;
   const payType   = document.getElementById('incomePayType').value;
   const remarks   = document.getElementById('incomeRemarks').value.trim();
+  const attachUrl  = document.getElementById('incAttachUrl').value;
+  const attachType = document.getElementById('incAttachType').value;
 
   if(!name)   { alert('Enter Name'); return; }
   if(!date)   { alert('Select Date'); return; }
@@ -1531,7 +1574,7 @@ async function saveIncome(){
     if(idx>-1) incomes[idx]={...incomes[idx], name, date, particular, amount, payType, remarks};
   } else {
     const nextId = incomes.length>0 ? Math.max(...incomes.map(i=>i.id))+1 : 1;
-    incomes.push({ id:nextId, name, date, particular, amount, payType, remarks, createdAt:Date.now() });
+    incomes.push({ id:nextId, name, date, particular, amount, payType, remarks, attachUrl:attachUrl||'', attachType:attachType||'', createdAt:Date.now() });
   }
 
   if(!incomeNames.includes(name)) incomeNames.push(name);
@@ -1543,6 +1586,7 @@ async function saveIncome(){
   } catch(e){ console.log('Income sync error',e); }
 
   closeIncomeModal();
+  resetUpload('inc');
   renderIncome();
   renderHome();
 }
@@ -1653,6 +1697,153 @@ async function inboxDone(id){
   renderHome();
 }
 
+// ═══════════════ CLOUDINARY IMAGE UPLOAD ═══════════════
+// Replace these with your Cloudinary credentials
+const CLOUDINARY_CLOUD = localStorage.getItem('cld_cloud') || 'YOUR_CLOUD_NAME';
+const CLOUDINARY_PRESET= localStorage.getItem('cld_preset')|| 'YOUR_UPLOAD_PRESET';
+
+function setupCloudinary(cloud, preset){
+  localStorage.setItem('cld_cloud',  cloud);
+  localStorage.setItem('cld_preset', preset);
+  alert('✅ Cloudinary connected!');
+}
+
+function handleFileSelect(prefix, input){
+  const file = input.files[0];
+  if(!file) return;
+
+  const maxMB = 10;
+  if(file.size > maxMB * 1024 * 1024){
+    alert(`File too large. Max ${maxMB}MB allowed.`);
+    input.value=''; return;
+  }
+
+  // Show preview immediately
+  const prompt   = document.getElementById(prefix+'UploadPrompt');
+  const preview  = document.getElementById(prefix+'FilePreview');
+  const previewC = document.getElementById(prefix+'PreviewContent');
+  const progress = document.getElementById(prefix+'UploadProgress');
+
+  prompt.style.display  = 'none';
+  preview.style.display = 'none';
+  progress.style.display= 'block';
+
+  const isPDF = file.type === 'application/pdf';
+
+  if(isPDF){
+    previewC.innerHTML = `<div style="font-size:2rem;">📄</div><div style="font-size:0.82rem;font-weight:600;color:#374151;margin-top:4px;">${file.name}</div>`;
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewC.innerHTML = `<img src="${e.target.result}" style="max-height:120px;max-width:100%;border-radius:8px;object-fit:contain;"/>`;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Upload to Cloudinary
+  uploadToCloudinary(file, prefix, isPDF);
+}
+
+async function uploadToCloudinary(file, prefix, isPDF){
+  const progress = document.getElementById(prefix+'UploadProgress');
+  const preview  = document.getElementById(prefix+'FilePreview');
+  const urlField = document.getElementById(prefix+'AttachUrl');
+  const typField = document.getElementById(prefix+'AttachType');
+
+  if(CLOUDINARY_CLOUD === 'YOUR_CLOUD_NAME'){
+    // No Cloudinary set up yet — store as base64 locally
+    const reader = new FileReader();
+    reader.onload = e => {
+      urlField.value  = e.target.result;
+      typField.value  = isPDF ? 'pdf' : 'image';
+      progress.style.display = 'none';
+      preview.style.display  = 'block';
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file',           file);
+    formData.append('upload_preset',  CLOUDINARY_PRESET);
+    formData.append('folder',         'ps-expense');
+
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, {
+      method: 'POST',
+      body:   formData
+    });
+    const data = await res.json();
+
+    if(data.secure_url){
+      urlField.value = data.secure_url;
+      typField.value = isPDF ? 'pdf' : 'image';
+      progress.style.display = 'none';
+      preview.style.display  = 'block';
+      console.log('✅ Uploaded:', data.secure_url);
+    } else {
+      throw new Error(data.error?.message || 'Upload failed');
+    }
+  } catch(e){
+    alert('Upload error: ' + e.message + '\n\nFile saved locally instead.');
+    // Fallback — save as base64
+    const reader = new FileReader();
+    reader.onload = ev => {
+      urlField.value = ev.target.result;
+      typField.value = isPDF ? 'pdf' : 'image';
+      progress.style.display = 'none';
+      preview.style.display  = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function clearFile(prefix){
+  document.getElementById(prefix+'FileInput').value  = '';
+  document.getElementById(prefix+'AttachUrl').value  = '';
+  document.getElementById(prefix+'AttachType').value = '';
+  document.getElementById(prefix+'UploadPrompt').style.display = 'block';
+  document.getElementById(prefix+'FilePreview').style.display  = 'none';
+  document.getElementById(prefix+'UploadProgress').style.display='none';
+  document.getElementById(prefix+'PreviewContent').innerHTML   = '';
+}
+
+function resetUpload(prefix){
+  clearFile(prefix);
+}
+
+// Show attachment in detail view
+function attachmentHTML(url, type){
+  if(!url) return '';
+  if(type==='pdf'){
+    return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#ebf0ff;color:#1a56db;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;text-decoration:none;margin-top:10px;">📄 View PDF</a>`;
+  }
+  return `<div style="margin-top:10px;"><img src="${url}" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:contain;border:1px solid #e2e5eb;cursor:pointer;" onclick="window.open('${url}','_blank')"/><div style="font-size:0.7rem;color:#9ca3af;margin-top:4px;">Tap image to open full size</div></div>`;
+}
+
+function showCloudinarySetup(){
+  document.getElementById('cldCloudInput').value  = localStorage.getItem('cld_cloud') ||'';
+  document.getElementById('cldPresetInput').value = localStorage.getItem('cld_preset')||'';
+  document.getElementById('cloudinaryModal').style.display='flex';
+}
+function saveCloudinaryConfig(){
+  const cloud  = document.getElementById('cldCloudInput').value.trim();
+  const preset = document.getElementById('cldPresetInput').value.trim();
+  if(!cloud||!preset){ alert('Please fill both fields'); return; }
+  localStorage.setItem('cld_cloud',  cloud);
+  localStorage.setItem('cld_preset', preset);
+  document.getElementById('cloudinaryModal').style.display='none';
+  updateCloudinaryStatus();
+  alert('✅ Cloudinary connected! You can now upload images and PDFs.');
+}
+function updateCloudinaryStatus(){
+  const cloud = localStorage.getItem('cld_cloud');
+  const el    = document.getElementById('cloudinaryStatus');
+  if(el) el.textContent = cloud && cloud!=='YOUR_CLOUD_NAME'
+    ? '✅ Connected — '+cloud
+    : 'Not configured — tap Setup';
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
@@ -1674,6 +1865,7 @@ async function loadFromCloud(){
   const ov = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
   const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
   updateBellBadge(ov+ds);
+  updateCloudinaryStatus();
   renderHome();
 }
 loadFromCloud();
@@ -1788,10 +1980,59 @@ loadFromCloud();
         <label>Remarks (Optional)</label>
         <textarea id="incomeRemarks" placeholder="Any additional notes..." style="min-height:60px;"></textarea>
       </div>
+      <!-- IMAGE / PDF UPLOAD (Optional) -->
+      <div style="margin-bottom:14px;">
+        <label>Attach Bill / Document (Optional)</label>
+        <div style="border:2px dashed #e2e5eb;border-radius:10px;padding:14px;text-align:center;background:#f7f8fa;" id="incUploadArea">
+          <input type="file" id="incFileInput" accept="image/*,.pdf" style="display:none;" onchange="handleFileSelect('inc',this)"/>
+          <div id="incUploadPrompt">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📎</div>
+            <div style="font-size:0.82rem;color:#6b7280;margin-bottom:8px;">Tap to attach image or PDF</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('incFileInput').click()">Choose File</button>
+          </div>
+          <div id="incFilePreview" style="display:none;">
+            <div id="incPreviewContent" style="margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('incFileInput').click()">Change</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearFile('inc')">Remove</button>
+            </div>
+          </div>
+          <div id="incUploadProgress" style="display:none;font-size:0.82rem;color:#1a56db;padding:8px;">⏳ Uploading...</div>
+        </div>
+        <input type="hidden" id="incAttachUrl" value=""/>
+        <input type="hidden" id="incAttachType" value=""/>
+      </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-success btn-full" onclick="saveIncome()">✓ Save Income</button>
         <button class="btn btn-ghost" onclick="closeIncomeModal()">✕</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOUDINARY SETUP MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;" id="cloudinaryModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:380px;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+    <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:6px;">☁️ Cloudinary Setup</h3>
+    <div style="background:#ebf0ff;border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.78rem;line-height:1.7;color:#374151;">
+      <b>How to get free account (2 min):</b><br/>
+      1. Go to <b>cloudinary.com</b> → Sign up free<br/>
+      2. Dashboard → copy <b>Cloud Name</b><br/>
+      3. Settings → Upload → Add upload preset<br/>
+      4. Set preset to <b>Unsigned</b> → Save<br/>
+      5. Paste both values below
+    </div>
+    <div style="margin-bottom:10px;">
+      <label>Cloud Name</label>
+      <input type="text" id="cldCloudInput" placeholder="e.g. my-cloud-123"/>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label>Upload Preset Name</label>
+      <input type="text" id="cldPresetInput" placeholder="e.g. ps_expense_upload"/>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary btn-full" onclick="saveCloudinaryConfig()">✓ Save & Connect</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('cloudinaryModal').style.display='none'">✕</button>
     </div>
   </div>
 </div>
