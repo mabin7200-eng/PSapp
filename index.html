@@ -27,17 +27,6 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .screen{display:none;min-height:100vh;padding-bottom:90px;}
 .screen.active{display:block;}
 
-/* GLOBAL INBOX PANEL */
-.inbox-panel{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;display:none;flex-direction:column;}
-.inbox-panel.open{display:flex;}
-.inbox-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.4);}
-.inbox-drawer{position:absolute;top:0;left:0;right:0;background:var(--surface);border-radius:0 0 20px 20px;max-height:80vh;display:flex;flex-direction:column;box-shadow:var(--shadow-md);animation:slideDown 0.25s ease;}
-@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
-.inbox-drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);background:var(--accent);color:#fff;}
-.inbox-drawer-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:10px;}
-.inbox-drawer-close{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.inbox-drawer-body{overflow-y:auto;padding:14px 16px;flex:1;}
-.inbox-empty-global{background:var(--green-light);border:1px solid #6ee7b7;border-radius:10px;padding:14px 16px;font-size:0.85rem;color:var(--green);font-weight:600;text-align:center;}
 /* BELL BUTTON */
 .bell-btn{position:relative;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
 .bell-btn:hover{background:rgba(255,255,255,0.28);}
@@ -47,6 +36,8 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .bell-count-badge.show{display:flex;}
 /* HOME BELL */
 .home-header{position:relative;}
+/* INBOX POPUP (bell tap) */
+
 /* HAMBURGER MENU DRAWER */
 .menu-drawer-ov{position:fixed;inset:0;z-index:600;display:none;}
 .menu-drawer-ov.open{display:block;}
@@ -303,6 +294,9 @@ tr:hover td{background:var(--surface2);}
 .home-card.income-card{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6ee7b7;}
 .home-card.income-card::after{background:#059669;}
 .home-card.income-card .home-card-amount{color:#065f46;}
+.home-card.doc-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#93c5fd;}
+.home-card.doc-card::after{background:#2563eb;}
+.home-card.doc-card .home-card-amount{color:#1e40af;}
 
 /* EMPTY */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted2);}
@@ -372,6 +366,13 @@ tr:hover td{background:var(--surface2);}
       <div class="home-card-label">Total Income</div>
       <div class="home-card-amount" id="homeIncomeTotal">₹0</div>
       <div class="home-card-sub" id="homeIncomeCount">0 entries</div>
+      <span class="home-card-arrow">›</span>
+    </div>
+    <div class="home-card doc-card" onclick="openDocs()" style="grid-column:1/-1;">
+      <span class="home-card-icon">🗂️</span>
+      <div class="home-card-label">Documents</div>
+      <div class="home-card-amount" id="homeDocCount">0</div>
+      <div class="home-card-sub" id="homeDocSub">documents stored — <span id="homeDocExpiry">0 expiring</span></div>
       <span class="home-card-arrow">›</span>
     </div>
   </div>
@@ -695,6 +696,8 @@ async function save() {
       tasks: tasks,
       incomes: incomes,
       incomeNames: incomeNames,
+      docs: docs,
+      docNames: docNames,
       lastUpdated: new Date().toISOString()
     });
   } catch(e) { console.error("Cloud Sync Error", e); }
@@ -712,6 +715,7 @@ function openStock(){showScreen('stock');renderStock();}
 function openAdd(){showScreen('add');initForm();}
 function closeAdd(){showScreen('expense');renderExpense();}
 function openIncome(){showScreen('income');renderIncome();}
+function openDocs(){showScreen('docs');renderDocs();}
 
 // ═══════════════ HOME ═══════════════
 function renderHome(){
@@ -737,7 +741,15 @@ function renderHome(){
   document.getElementById('homeTaskCount').textContent = tasks.length;
   document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
   document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue ⚠️' : dueSoon>0 ? dueSoon+' due soon' : 'all on track ✅';
-  updateBellBadge(overdue+dueSoon);
+
+  // Doc expiry summary
+  const docExpiring = docs.filter(d=>d.expiry&&DOC_TYPES[d.type]?.hasExpiry).filter(d=>{ const days=docDaysLeft(d.expiry); return days!==null&&days<=30; }).length;
+  const hdc2 = document.getElementById('homeDocCount');
+  const hde2 = document.getElementById('homeDocExpiry');
+  if(hdc2) hdc2.textContent = docs.length;
+  if(hde2) hde2.textContent = docExpiring>0 ? docExpiring+' expiring soon ⚠️' : 'all valid';
+
+  updateBellBadge(overdue+dueSoon+docExpiring);
   renderInbox();
 }
 
@@ -1640,7 +1652,7 @@ function saveIncomePDF(){
 // ═══════════════ GLOBAL INBOX PANEL ═══════════════
 function updateBellBadge(count){
   // Update all bell badges across all screens
-  ['homeBellBadge','bellBadge1','bellBadge2','bellBadge3'].forEach(id=>{
+  ['homeBellBadge','bellBadge1','bellBadge2','bellBadge3','bellBadge4'].forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
     if(count > 0){
@@ -1654,51 +1666,91 @@ function updateBellBadge(count){
 }
 
 function openInbox(){
-  // Build inbox content from tasks
+  closeMenu();
+  showScreen('inbox');
+  renderInboxScreen();
+}
+
+function renderInboxScreen(){
   const alerts = [];
+
+  // Task alerts
   tasks.forEach(t=>{
     const d = taskDaysLeft(t.lastDate, t.freq);
     if(d === null) return;
-    if(d < 0)        alerts.push({...t, d, type:'overdue'});
-    else if(d <= 10) alerts.push({...t, d, type:'due-soon'});
+    if(d < 0)        alerts.push({...t, d, type:'overdue',   section:'task'});
+    else if(d <= 10) alerts.push({...t, d, type:'due-soon',  section:'task'});
   });
+
+  // Document expiry alerts
+  docs.forEach(doc=>{
+    if(!doc.expiry || !DOC_TYPES[doc.type]?.hasExpiry) return;
+    const d = docDaysLeft(doc.expiry);
+    if(d===null) return;
+    if(d<=30){
+      alerts.push({
+        id: doc.id,
+        name: `${DOC_TYPES[doc.type]?.icon||'📄'} ${doc.name}'s ${doc.type}`,
+        d,
+        type: d<0 ? 'overdue' : 'due-soon',
+        section: 'doc',
+        expiry: doc.expiry
+      });
+    }
+  });
+
   alerts.sort((a,b)=>a.d - b.d);
 
-  const body  = document.getElementById('inboxPanelBody');
-  const badge = document.getElementById('inboxPanelBadge');
+  // Update badge on screen header
+  const hdr = document.getElementById('inboxScreenBadge');
+  if(hdr) hdr.textContent = alerts.length ? alerts.length+' alert'+(alerts.length!==1?'s':'') : 'All clear';
 
-  if(badge) badge.textContent = alerts.length ? alerts.length + ' alert' + (alerts.length!==1?'s':'') : '';
+  const body = document.getElementById('inboxScreenBody');
+  if(!body) return;
 
   if(!alerts.length){
-    body.innerHTML = `<div style="background:var(--green-light);border:1px solid #6ee7b7;border-radius:10px;padding:16px;text-align:center;font-size:0.88rem;color:var(--green);font-weight:600;">✅ All tasks on track — no alerts!</div>`;
-  } else {
-    body.innerHTML = alerts.map(t=>{
-      const isOver = t.type==='overdue';
-      const icon   = isOver ? '🔴' : '🟡';
-      const msg    = isOver
-        ? `${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} overdue!`
-        : t.d===0 ? '⚡ Due TODAY!'
-        : t.d===1 ? '⚡ Due Tomorrow!'
-        : `Due in ${t.d} days`;
-      const nextD = taskNextDate(t.lastDate, t.freq);
-      return `<div style="background:${isOver?'var(--red-light)':'var(--orange-light)'};border:1px solid ${isOver?'#fca5a5':'#fdba74'};border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;">
-        <span style="font-size:1.3rem;flex-shrink:0;">${icon}</span>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:0.95rem;font-family:'Barlow Condensed',sans-serif;">${t.name}</div>
-          <div style="font-size:0.8rem;color:${isOver?'var(--red)':'var(--orange)'};font-weight:700;margin-top:2px;">${msg}</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">⏭ Next: ${nextD?fmtDate(nextD):'—'} &nbsp;·&nbsp; Every ${t.freq} days</div>
-          ${t.remarks?`<div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">📝 ${t.remarks}</div>`:''}
-        </div>
-        <button onclick="inboxDone('${t.id}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:700;font-size:0.75rem;cursor:pointer;white-space:nowrap;flex-shrink:0;">✓ Done</button>
+    body.innerHTML = `
+      <div style="text-align:center;padding:50px 24px;">
+        <div style="font-size:3rem;margin-bottom:14px;">✅</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:#057a55;margin-bottom:6px;">All Tasks On Track!</div>
+        <div style="font-size:0.85rem;color:#6b7280;">No overdue or due-soon tasks.<br/>Everything looks good 👍</div>
       </div>`;
-    }).join('');
+    return;
   }
 
-  document.getElementById('inboxPanel').classList.add('open');
-}
-
-function closeInbox(){
-  document.getElementById('inboxPanel').classList.remove('open');
+  body.innerHTML = alerts.map(t=>{
+    const isOver = t.type==='overdue';
+    const icon   = isOver ? '🔴' : '🟡';
+    const msg    = isOver
+      ? `${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} overdue`
+      : t.d===0 ? '⚡ Due TODAY'
+      : t.d===1 ? '⚡ Due Tomorrow'
+      : `Due in ${t.d} days`;
+    const nextD = taskNextDate(t.lastDate, t.freq);
+    return `
+      <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden;border:1px solid ${isOver?'#fca5a5':'#fdba74'};">
+        <!-- Colour strip top -->
+        <div style="height:4px;background:${isOver?'var(--red)':'var(--orange)'};"></div>
+        <div style="padding:14px 16px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <span style="font-size:1.5rem;flex-shrink:0;margin-top:2px;">${icon}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:800;font-size:1rem;font-family:'Barlow Condensed',sans-serif;color:#111;">${t.name}</div>
+              <div style="font-size:0.82rem;color:${isOver?'var(--red)':'var(--orange)'};font-weight:700;margin-top:3px;">${msg}</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+                <span style="font-size:0.72rem;color:#6b7280;background:#f3f4f6;padding:2px 8px;border-radius:10px;">⏭ Next: ${nextD?fmtDate(nextD):'—'}</span>
+                <span style="font-size:0.72rem;color:#6b7280;background:#f3f4f6;padding:2px 8px;border-radius:10px;">🔁 Every ${t.freq} days</span>
+              </div>
+              ${t.remarks?`<div style="font-size:0.75rem;color:#9ca3af;margin-top:6px;font-style:italic;">📝 ${t.remarks}</div>`:''}
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button onclick="inboxDone('${t.id}')" style="flex:1;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.85rem;cursor:pointer;">✓ Mark Done Today</button>
+            <button onclick="closeMenu();openTask()" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:0.82rem;cursor:pointer;">View Tasks</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function inboxDone(id){
@@ -1707,11 +1759,10 @@ async function inboxDone(id){
   tasks[idx].lastDate = new Date().toISOString().split('T')[0];
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
   try{ await db.collection("userdata").doc("ps_enterprise_data").update({tasks}); }catch(e){}
-  // Refresh badge and inbox
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
   const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
   updateBellBadge(overdue+dueSoon);
-  openInbox(); // refresh panel content
+  renderInboxScreen();
   renderHome();
 }
 
@@ -1916,6 +1967,225 @@ function updateCloudinaryStatus(){
   if(menuEl) menuEl.textContent = statusText;
 }
 
+// ═══════════════ DOCUMENTS ═══════════════
+let docs      = JSON.parse(localStorage.getItem('docs_v1')||'[]');
+let docNames  = JSON.parse(localStorage.getItem('docNames')||'[]');
+let docFilter = 'all';
+
+// Doc types config — hasExpiry=true means show expiry + alert
+const DOC_TYPES = {
+  'Aadhaar':        { icon:'🪪', color:'#1e40af', bg:'#dbeafe', hasExpiry:false, numberLabel:'Aadhaar Number' },
+  'PAN':            { icon:'📋', color:'#065f46', bg:'#def7ec', hasExpiry:false, numberLabel:'PAN Number' },
+  'Bank':           { icon:'🏦', color:'#5521b5', bg:'#edebff', hasExpiry:false, numberLabel:'Account Number', hasBank:true },
+  'Passport':       { icon:'🛂', color:'#c81e1e', bg:'#fde8e8', hasExpiry:true,  numberLabel:'Passport Number' },
+  'Health Insurance':{ icon:'🏥', color:'#d03801', bg:'#feecdc', hasExpiry:true, numberLabel:'Policy Number' },
+  'Other':          { icon:'📄', color:'#374151', bg:'#f3f4f6', hasExpiry:false, numberLabel:'Document Number' },
+};
+
+function openDocs(){ showScreen('docs'); renderDocs(); }
+
+function docDaysLeft(expiry){
+  if(!expiry) return null;
+  const exp = new Date(expiry); exp.setHours(0,0,0,0);
+  const now = new Date();       now.setHours(0,0,0,0);
+  return Math.round((exp - now) / 86400000);
+}
+
+function setDocFilter(f, el){
+  docFilter = f;
+  document.querySelectorAll('.doc-filter').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderDocs();
+}
+
+function onDocTypeChange(){
+  const type = document.getElementById('docType').value;
+  const cfg  = DOC_TYPES[type] || {};
+  document.getElementById('docExpiryRow').style.display  = cfg.hasExpiry ? 'block' : 'none';
+  document.getElementById('docBankRow').style.display    = cfg.hasBank   ? 'block' : 'none';
+  document.getElementById('docNumberLabel').textContent  = cfg.numberLabel || 'Document Number';
+  document.getElementById('docExpiryWarning').textContent = '';
+  if(cfg.hasExpiry){
+    const exp = document.getElementById('docExpiry').value;
+    if(exp) updateExpiryWarning(exp);
+  }
+}
+
+function updateExpiryWarning(expiry){
+  const d   = docDaysLeft(expiry);
+  const el  = document.getElementById('docExpiryWarning');
+  if(d===null){ el.textContent=''; return; }
+  if(d<0)    el.textContent = '⚠️ Already expired '+Math.abs(d)+' days ago!';
+  else if(d<=30) el.textContent = '⚠️ Expires in '+d+' days!';
+  else if(d<=90) el.textContent = '📅 Expires in '+d+' days';
+  else           el.textContent = '';
+}
+
+function renderDocs(){
+  let list = [...docs];
+  if(docFilter !== 'all') list = list.filter(d=>d.type===docFilter);
+  list.sort((a,b)=>{
+    // Expiring docs first
+    const da = a.expiry ? docDaysLeft(a.expiry) : 9999;
+    const db2= b.expiry ? docDaysLeft(b.expiry) : 9999;
+    return da - db2;
+  });
+
+  // Alert strip
+  const expiring = docs.filter(d=>d.expiry&&DOC_TYPES[d.type]?.hasExpiry).filter(d=>{
+    const days = docDaysLeft(d.expiry);
+    return days!==null && days<=30;
+  });
+  const strip = document.getElementById('docAlertStrip');
+  const stripTxt = document.getElementById('docAlertText');
+  if(expiring.length && strip){
+    strip.style.display='flex';
+    stripTxt.textContent = expiring.map(d=>`${DOC_TYPES[d.type]?.icon||'📄'} ${d.name}'s ${d.type}: ${docDaysLeft(d.expiry)<0?'EXPIRED':'expires in '+docDaysLeft(d.expiry)+' days'}`).join(' | ');
+  } else if(strip){ strip.style.display='none'; }
+
+  // Home card update
+  const allExpiring = docs.filter(d=>d.expiry&&DOC_TYPES[d.type]?.hasExpiry&&docDaysLeft(d.expiry)<=30).length;
+  const hdc = document.getElementById('homeDocCount');
+  const hds = document.getElementById('homeDocSub');
+  const hde = document.getElementById('homeDocExpiry');
+  if(hdc) hdc.textContent = docs.length;
+  if(hds) hds.textContent = docs.length+' document'+(docs.length!==1?'s':'')+' stored';
+  if(hde) hde.textContent = allExpiring>0 ? allExpiring+' expiring soon ⚠️' : 'all valid';
+
+  const el = document.getElementById('docList');
+  if(!el) return;
+
+  if(!list.length){
+    el.innerHTML=`<div class="empty-state"><span class="ei">🗂️</span>No documents yet.<br/>Tap <b>+</b> to add your first document.</div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(doc=>{
+    const cfg  = DOC_TYPES[doc.type] || DOC_TYPES['Other'];
+    const days = doc.expiry ? docDaysLeft(doc.expiry) : null;
+    let expiryBadge = '';
+    if(days!==null){
+      if(days<0)    expiryBadge=`<span style="background:#fde8e8;color:#c81e1e;font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;">⚠️ EXPIRED</span>`;
+      else if(days<=30) expiryBadge=`<span style="background:#feecdc;color:#d03801;font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;">⚠️ ${days}d left</span>`;
+      else if(days<=90) expiryBadge=`<span style="background:#fef9c3;color:#92400e;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;">${days}d left</span>`;
+      else expiryBadge=`<span style="background:#def7ec;color:#057a55;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;">✅ Valid</span>`;
+    }
+    return `
+    <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:12px;border:1px solid #e2e5eb;overflow:hidden;border-left:4px solid ${cfg.color};">
+      <div style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:40px;height:40px;border-radius:10px;background:${cfg.bg};display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">${cfg.icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:0.95rem;font-family:'Barlow Condensed',sans-serif;">${doc.name}</div>
+            <div style="font-size:0.75rem;color:#6b7280;">${doc.type}${doc.bank?' — '+doc.bank:''}</div>
+          </div>
+          ${expiryBadge}
+          <button onclick="openDocModal('${doc.id}')" style="background:#f3f4f6;border:none;border-radius:8px;padding:6px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;color:#374151;">✏️</button>
+          <button onclick="deleteDoc('${doc.id}')" style="background:#fde8e8;border:none;border-radius:8px;padding:6px 10px;font-size:0.75rem;cursor:pointer;color:#c81e1e;">🗑</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          ${doc.number?`<span style="font-size:0.78rem;background:#f3f4f6;padding:3px 10px;border-radius:10px;font-weight:600;color:#374151;">${maskNumber(doc.type,doc.number)}</span>`:''}
+          ${doc.expiry?`<span style="font-size:0.72rem;color:#6b7280;background:#f9fafb;padding:3px 10px;border-radius:10px;">📅 Expires: ${fmtDate(doc.expiry)}</span>`:''}
+          ${doc.remarks?`<span style="font-size:0.72rem;color:#9ca3af;font-style:italic;">📝 ${doc.remarks}</span>`:''}
+        </div>
+        ${doc.attachUrl?`<div style="margin-top:10px;">${attachmentHTML(doc.attachUrl, doc.attachType)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Mask sensitive numbers for display
+function maskNumber(type, num){
+  if(!num) return '';
+  if(type==='Aadhaar') return num.replace(/^(\d{4})(\d{4})(\d{4})$/,'XXXX XXXX $3').replace(/(.{4})(.{4})(.+)/,'XXXX XXXX '+num.slice(-4));
+  if(type==='PAN') return num.slice(0,2)+'XXXXX'+num.slice(-2);
+  if(type==='Bank') return 'XXXX'+num.slice(-4);
+  return num; // Passport, Policy — show full
+}
+
+function openDocModal(id){
+  document.getElementById('docEditId').value = id||'';
+  document.getElementById('docModalTitle').textContent = id ? 'Edit Document' : 'Add Document';
+  document.getElementById('docNamesList').innerHTML = docNames.map(n=>`<option value="${n}"/>`).join('');
+
+  if(id){
+    const doc = docs.find(d=>d.id===id);
+    if(!doc) return;
+    document.getElementById('docType').value    = doc.type||'Aadhaar';
+    document.getElementById('docName').value    = doc.name||'';
+    document.getElementById('docNumber').value  = doc.number||'';
+    document.getElementById('docExpiry').value  = doc.expiry||'';
+    document.getElementById('docBank').value    = doc.bank||'';
+    document.getElementById('docRemarks').value = doc.remarks||'';
+    document.getElementById('docAttachUrl').value  = doc.attachUrl||'';
+    document.getElementById('docAttachType').value = doc.attachType||'';
+    // Show preview if attachment exists
+    if(doc.attachUrl){
+      document.getElementById('docUploadPrompt').style.display='none';
+      document.getElementById('docFilePreview').style.display='block';
+      const isPDF = doc.attachType==='pdf';
+      document.getElementById('docPreviewContent').innerHTML = isPDF
+        ? `<div style="font-size:2rem;">📄</div><div style="font-size:0.82rem;font-weight:600;color:#374151;">PDF attached</div>`
+        : `<img src="${doc.attachUrl}" style="max-height:100px;max-width:100%;border-radius:8px;object-fit:contain;"/>`;
+    } else { resetUpload('doc'); }
+  } else {
+    document.getElementById('docType').value    = 'Aadhaar';
+    document.getElementById('docName').value    = '';
+    document.getElementById('docNumber').value  = '';
+    document.getElementById('docExpiry').value  = '';
+    document.getElementById('docBank').value    = '';
+    document.getElementById('docRemarks').value = '';
+    resetUpload('doc');
+  }
+  onDocTypeChange();
+  document.getElementById('docModal').style.display='flex';
+}
+function closeDocModal(){ document.getElementById('docModal').style.display='none'; resetUpload('doc'); }
+
+async function saveDoc(){
+  const editId   = document.getElementById('docEditId').value;
+  const type     = document.getElementById('docType').value;
+  const name     = document.getElementById('docName').value.trim();
+  const number   = document.getElementById('docNumber').value.trim();
+  const expiry   = document.getElementById('docExpiry').value;
+  const bank     = document.getElementById('docBank').value.trim();
+  const remarks  = document.getElementById('docRemarks').value.trim();
+  const attachUrl  = document.getElementById('docAttachUrl').value;
+  const attachType = document.getElementById('docAttachType').value;
+
+  if(!name){ alert('Enter Name'); return; }
+  if(!type){ alert('Select Document Type'); return; }
+
+  const entry = { type, name, number, expiry, bank, remarks, attachUrl, attachType };
+
+  if(editId){
+    const idx = docs.findIndex(d=>d.id===editId);
+    if(idx>-1) docs[idx]={...docs[idx],...entry};
+  } else {
+    entry.id = 'doc_'+Date.now();
+    entry.createdAt = Date.now();
+    docs.push(entry);
+  }
+
+  if(!docNames.includes(name)) docNames.push(name);
+  localStorage.setItem('docs_v1',  JSON.stringify(docs));
+  localStorage.setItem('docNames', JSON.stringify(docNames));
+
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ docs, docNames }); } catch(e){ console.log('Doc sync error',e); }
+
+  closeDocModal();
+  renderDocs();
+  renderHome();
+}
+
+async function deleteDoc(id){
+  if(!confirm('Delete this document?')) return;
+  docs = docs.filter(d=>d.id!==id);
+  localStorage.setItem('docs_v1', JSON.stringify(docs));
+  try { await db.collection("userdata").doc("ps_enterprise_data").update({ docs }); } catch(e){}
+  renderDocs(); renderHome();
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
@@ -1931,6 +2201,8 @@ async function loadFromCloud(){
       if(data.tasks)       { tasks=data.tasks;               localStorage.setItem('tasks_v1',JSON.stringify(tasks)); }
       if(data.incomes)     { incomes=data.incomes;           localStorage.setItem('incomes_v1',JSON.stringify(incomes)); }
       if(data.incomeNames) { incomeNames=data.incomeNames;   localStorage.setItem('incomeNames',JSON.stringify(incomeNames)); }
+      if(data.docs)        { docs=data.docs;                 localStorage.setItem('docs_v1',JSON.stringify(docs)); }
+      if(data.docNames)    { docNames=data.docNames;         localStorage.setItem('docNames',JSON.stringify(docNames)); }
     }
   } catch(e){ console.log("Offline — using local data"); }
   // Update bell badge on load
@@ -2082,6 +2354,125 @@ loadFromCloud();
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════
+     SCREEN: DOCUMENTS
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-docs">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <span class="topbar-title">🗂️ Documents</span>
+    <div class="topbar-actions">
+      <button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
+      <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge5"></span></button>
+    </div>
+  </div>
+
+  <!-- Expiry alert strip -->
+  <div id="docAlertStrip" style="display:none;background:#c81e1e;color:#fff;padding:10px 18px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:8px;">
+    <span>⚠️</span><span id="docAlertText"></span>
+  </div>
+
+  <!-- Doc type filter tabs -->
+  <div style="background:#fff;border-bottom:1px solid #e2e5eb;padding:10px 16px;display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">
+    <div class="filter-chip doc-filter active" onclick="setDocFilter('all',this)">All</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('Aadhaar',this)">🪪 Aadhaar</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('PAN',this)">📋 PAN</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('Bank',this)">🏦 Bank</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('Passport',this)">🛂 Passport</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('Health Insurance',this)">🏥 Insurance</div>
+    <div class="filter-chip doc-filter" onclick="setDocFilter('Other',this)">📄 Other</div>
+  </div>
+
+  <div style="padding:14px 16px 90px;" id="docList"></div>
+  <button class="fab visible" onclick="openDocModal(null)">+</button>
+</div>
+
+<!-- DOCUMENT ADD/EDIT MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;" id="docModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin:auto;margin-top:20px;">
+    <div style="padding:16px 18px 12px;border-bottom:1px solid #e2e5eb;display:flex;align-items:center;justify-content:space-between;">
+      <h2 id="docModalTitle" style="font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;">Add Document</h2>
+      <button onclick="closeDocModal()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#6b7280;padding:4px 8px;border-radius:6px;">✕</button>
+    </div>
+    <div style="padding:16px 18px;">
+      <input type="hidden" id="docEditId"/>
+
+      <!-- Document Type -->
+      <div style="margin-bottom:12px;">
+        <label>Document Type</label>
+        <select id="docType" onchange="onDocTypeChange()">
+          <option value="Aadhaar">🪪 Aadhaar Card</option>
+          <option value="PAN">📋 PAN Card</option>
+          <option value="Bank">🏦 Bank Passbook / Card</option>
+          <option value="Passport">🛂 Passport</option>
+          <option value="Health Insurance">🏥 Health Insurance</option>
+          <option value="Other">📄 Other</option>
+        </select>
+      </div>
+
+      <!-- Name of person -->
+      <div style="margin-bottom:12px;">
+        <label>Name (Person / Member)</label>
+        <input type="text" id="docName" list="docNamesList" placeholder="e.g. Self, Spouse, Father..."/>
+        <datalist id="docNamesList"></datalist>
+      </div>
+
+      <!-- Doc number — hidden for passport/insurance -->
+      <div style="margin-bottom:12px;" id="docNumberRow">
+        <label id="docNumberLabel">Document Number</label>
+        <input type="text" id="docNumber" placeholder="Enter number..."/>
+      </div>
+
+      <!-- Expiry date — only passport & insurance -->
+      <div style="margin-bottom:12px;display:none;" id="docExpiryRow">
+        <label>Expiry Date</label>
+        <input type="date" id="docExpiry"/>
+        <div style="font-size:0.72rem;color:#d03801;margin-top:4px;font-weight:600;" id="docExpiryWarning"></div>
+      </div>
+
+      <!-- Bank name — only for bank -->
+      <div style="margin-bottom:12px;display:none;" id="docBankRow">
+        <label>Bank Name</label>
+        <input type="text" id="docBank" placeholder="e.g. SBI, HDFC, Axis..."/>
+      </div>
+
+      <!-- Remarks -->
+      <div style="margin-bottom:12px;">
+        <label>Remarks (Optional)</label>
+        <input type="text" id="docRemarks" placeholder="Any notes..."/>
+      </div>
+
+      <!-- File Upload -->
+      <div style="margin-bottom:16px;">
+        <label>Attach Document (PDF / Image)</label>
+        <div style="border:2px dashed #e2e5eb;border-radius:10px;padding:14px;text-align:center;background:#f7f8fa;" id="docUploadArea">
+          <input type="file" id="docFileInput" accept="image/*,.pdf" style="display:none;" onchange="handleFileSelect('doc',this)"/>
+          <div id="docUploadPrompt">
+            <div style="font-size:1.5rem;margin-bottom:6px;">📎</div>
+            <div style="font-size:0.82rem;color:#6b7280;margin-bottom:8px;">Tap to attach PDF or image</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('docFileInput').click()">Choose File</button>
+          </div>
+          <div id="docFilePreview" style="display:none;">
+            <div id="docPreviewContent" style="margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('docFileInput').click()">Change</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearFile('doc')">Remove</button>
+            </div>
+          </div>
+          <div id="docUploadProgress" style="display:none;font-size:0.82rem;color:#1a56db;padding:8px;">⏳ Uploading...</div>
+        </div>
+        <input type="hidden" id="docAttachUrl" value=""/>
+        <input type="hidden" id="docAttachType" value=""/>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-success btn-full" onclick="saveDoc()">✓ Save Document</button>
+        <button class="btn btn-ghost" onclick="closeDocModal()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- FULLSCREEN IMAGE VIEWER -->
 <div id="imageViewerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;" onclick="closeImageViewer()">
   <button onclick="closeImageViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;z-index:1001;">✕</button>
@@ -2116,17 +2507,24 @@ loadFromCloud();
   </div>
 </div>
 
-<!-- GLOBAL INBOX PANEL -->
-<div class="inbox-panel" id="inboxPanel">
-  <div class="inbox-backdrop" onclick="closeInbox()"></div>
-  <div class="inbox-drawer">
-    <div class="inbox-drawer-hdr">
-      <div class="inbox-drawer-title">✉️ Alerts &amp; Reminders <span id="inboxPanelBadge" style="background:rgba(255,255,255,0.25);border-radius:20px;padding:2px 10px;font-size:0.75rem;margin-left:6px;"></span></div>
-      <button class="inbox-drawer-close" onclick="closeInbox()">✕</button>
+<!-- ══════════════════════════════════════════
+     SCREEN: INBOX / ALERTS
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-inbox">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <span class="topbar-title">✉️ Alerts &amp; Reminders</span>
+    <div class="topbar-actions">
+      <button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
     </div>
-    <div class="inbox-drawer-body" id="inboxPanelBody">
-      <div style="text-align:center;color:var(--muted2);padding:20px;">Loading...</div>
-    </div>
+  </div>
+  <!-- Summary strip -->
+  <div style="background:var(--accent);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:0.72rem;opacity:0.75;text-transform:uppercase;letter-spacing:1px;font-family:'Barlow Condensed',sans-serif;">Status</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;" id="inboxScreenBadge">—</div>
+  </div>
+  <div style="padding:14px 16px 90px;" id="inboxScreenBody">
+    <div style="text-align:center;padding:40px;color:#9ca3af;">Loading...</div>
   </div>
 </div>
 
@@ -2178,12 +2576,11 @@ loadFromCloud();
         <span style="font-size:0.75rem;color:#9ca3af;">›</span>
       </div>
 
-      <!-- Alerts Inbox -->
       <div class="menu-item" onclick="closeMenu();openInbox()">
         <div class="menu-item-icon" style="background:#fef9c3;">✉️</div>
         <div style="flex:1;">
           <div class="menu-item-label">Alerts &amp; Inbox</div>
-          <div class="menu-item-desc">Task due reminders</div>
+          <div class="menu-item-desc">Task due reminders — full page</div>
         </div>
         <span id="menuInboxBadge" style="display:none;background:#c81e1e;color:#fff;border-radius:20px;font-size:0.65rem;font-weight:800;padding:2px 8px;"></span>
       </div>
