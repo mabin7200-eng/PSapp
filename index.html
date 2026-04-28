@@ -1750,7 +1750,12 @@ async function uploadToCloudinary(file, prefix, isPDF){
   const urlField = document.getElementById(prefix+'AttachUrl');
   const typField = document.getElementById(prefix+'AttachType');
 
-  if(CLOUDINARY_CLOUD === 'YOUR_CLOUD_NAME'){
+  // Always read fresh from localStorage
+  const cloud  = localStorage.getItem('cld_cloud')  || '';
+  const preset = localStorage.getItem('cld_preset') || '';
+  const hasCloudinary = cloud && cloud !== 'YOUR_CLOUD_NAME' && preset;
+
+  if(!hasCloudinary){
     // No Cloudinary set up yet — store as base64 locally
     const reader = new FileReader();
     reader.onload = e => {
@@ -1766,10 +1771,10 @@ async function uploadToCloudinary(file, prefix, isPDF){
   try {
     const formData = new FormData();
     formData.append('file',           file);
-    formData.append('upload_preset',  CLOUDINARY_PRESET);
+    formData.append('upload_preset',  preset);
     formData.append('folder',         'ps-expense');
 
-    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, {
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/auto/upload`, {
       method: 'POST',
       body:   formData
     });
@@ -1816,9 +1821,37 @@ function resetUpload(prefix){
 function attachmentHTML(url, type){
   if(!url) return '';
   if(type==='pdf'){
-    return `<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#ebf0ff;color:#1a56db;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;text-decoration:none;margin-top:10px;">📄 View PDF</a>`;
+    // For base64 PDF — create blob and open, for URL just open directly
+    const isBase64 = url.startsWith('data:');
+    if(isBase64){
+      return `<button onclick="event.stopPropagation();openBase64PDF('${url.substring(0,50)+'...'}')" 
+        style="display:inline-flex;align-items:center;gap:6px;background:#ebf0ff;color:#1a56db;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;border:none;cursor:pointer;margin-top:8px;"
+        data-fullurl="${url}">📄 View PDF</button>`;
+    }
+    return `<a href="${url}" target="_blank" 
+      style="display:inline-flex;align-items:center;gap:6px;background:#ebf0ff;color:#1a56db;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;text-decoration:none;margin-top:8px;"
+      onclick="event.stopPropagation();">📄 View PDF</a>`;
   }
-  return `<div style="margin-top:10px;"><img src="${url}" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:contain;border:1px solid #e2e5eb;cursor:pointer;" onclick="window.open('${url}','_blank')"/><div style="font-size:0.7rem;color:#9ca3af;margin-top:4px;">Tap image to open full size</div></div>`;
+  // Image — show thumbnail, tap opens fullscreen modal inside app
+  return `<div style="margin-top:8px;" onclick="event.stopPropagation();">
+    <img src="${url}" 
+      style="max-width:100%;max-height:160px;border-radius:10px;object-fit:contain;border:1px solid #e2e5eb;cursor:zoom-in;display:block;"
+      onclick="openImageViewer('${url}')"
+      onerror="this.parentElement.innerHTML='<div style=\'font-size:0.78rem;color:#c81e1e;\'>❌ Image failed to load</div>'"
+    />
+    <div style="font-size:0.68rem;color:#9ca3af;margin-top:3px;">Tap image to view fullscreen</div>
+  </div>`;
+}
+
+function openImageViewer(url){
+  const modal = document.getElementById('imageViewerModal');
+  const img   = document.getElementById('imageViewerImg');
+  img.src = url;
+  modal.style.display = 'flex';
+}
+function closeImageViewer(){
+  document.getElementById('imageViewerModal').style.display='none';
+  document.getElementById('imageViewerImg').src='';
 }
 
 function showCloudinarySetup(){
@@ -2008,6 +2041,13 @@ loadFromCloud();
       </div>
     </div>
   </div>
+</div>
+
+<!-- FULLSCREEN IMAGE VIEWER -->
+<div id="imageViewerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;" onclick="closeImageViewer()">
+  <button onclick="closeImageViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;z-index:1001;">✕</button>
+  <img id="imageViewerImg" src="" style="max-width:96vw;max-height:88vh;object-fit:contain;border-radius:8px;" onclick="event.stopPropagation()"/>
+  <div style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:10px;">Tap outside to close</div>
 </div>
 
 <!-- CLOUDINARY SETUP MODAL -->
