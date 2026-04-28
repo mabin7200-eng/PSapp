@@ -47,6 +47,30 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .bell-count-badge.show{display:flex;}
 /* HOME BELL */
 .home-header{position:relative;}
+/* HAMBURGER MENU DRAWER */
+.menu-drawer-ov{position:fixed;inset:0;z-index:600;display:none;}
+.menu-drawer-ov.open{display:block;}
+.menu-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45);}
+.menu-drawer{position:absolute;left:0;top:0;bottom:0;width:82%;max-width:300px;background:#fff;display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,0.18);animation:slideRight 0.25s ease;}
+@keyframes slideRight{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+.menu-drawer-head{background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:32px 20px 20px;}
+.menu-drawer-logo{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;letter-spacing:-1px;}
+.menu-drawer-sub{font-size:0.75rem;opacity:0.7;margin-top:2px;}
+.menu-section-title{font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;padding:14px 20px 4px;font-family:'Barlow Condensed',sans-serif;}
+.menu-item{display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer;transition:background 0.15s;}
+.menu-item:hover{background:#f7f8fa;}
+.menu-item:active{background:#e9ecf0;}
+.menu-item-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0;}
+.menu-item-label{font-weight:700;font-size:0.88rem;color:#111928;flex:1;}
+.menu-item-desc{font-size:0.7rem;color:#9ca3af;margin-top:1px;}
+.menu-item-badge{font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;}
+.menu-item-badge.ok{background:#def7ec;color:#057a55;}
+.menu-item-badge.warn{background:#feecdc;color:#d03801;}
+.menu-divider{height:1px;background:#f3f4f6;margin:4px 0;}
+.menu-scroll{flex:1;overflow-y:auto;}
+.hamburger-btn{background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.28);border-radius:10px;width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0;}
+.hamburger-btn span{display:block;width:18px;height:2px;background:#fff;border-radius:2px;}
+
 .home-bell{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.3);border-radius:12px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;}
 .home-bell-badge{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:0.62rem;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid #fff;padding:0 3px;}
 .home-bell-badge.show{display:flex;}
@@ -304,13 +328,18 @@ tr:hover td{background:var(--surface2);}
 <body>
 
 <div class="screen active" id="screen-home">
-  <div class="home-header">
-    <div class="home-logo">PS</div>
-    <div class="home-header-text">
-      <div class="home-date" id="homeDate"></div>
-      <div class="home-title">Tap a section to open</div>
+  <div class="home-header" style="display:flex;align-items:center;gap:12px;padding:14px 16px 12px;">
+    <!-- Hamburger left -->
+    <div class="hamburger-btn" onclick="openMenu()">
+      <span></span><span></span><span></span>
     </div>
-    <div class="home-bell" onclick="openInbox()">
+    <!-- Center -->
+    <div style="flex:1;">
+      <div class="home-date" id="homeDate"></div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:rgba(255,255,255,0.85);">Tap a section to open</div>
+    </div>
+    <!-- Bell right -->
+    <div onclick="openInbox()" style="position:relative;background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.3);border-radius:12px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;">
       ✉️
       <div class="home-bell-badge" id="homeBellBadge"></div>
     </div>
@@ -347,17 +376,6 @@ tr:hover td{background:var(--surface2);}
     </div>
   </div>
 
-  <!-- Cloudinary Setup Card -->
-  <div style="padding:0 16px 8px;">
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e5eb;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <div>
-        <div style="font-size:0.7rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:1px;color:#6b7280;">☁️ Image Upload</div>
-        <div style="font-size:0.8rem;font-weight:600;color:#374151;margin-top:2px;" id="cloudinaryStatus">Not configured — tap Setup</div>
-      </div>
-      <button onclick="showCloudinarySetup()" style="background:#1a56db;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">⚙️ Setup</button>
-    </div>
-  </div>
-
   <!-- INBOX / ALERTS -->
   <div class="inbox-wrap" id="inboxWrap">
     <div class="inbox-title">
@@ -372,7 +390,7 @@ tr:hover td{background:var(--surface2);}
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Expenses</span>
-    <div class="topbar-actions">
+    <div class="topbar-actions"><button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
       <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge1"></span></button>
       <button class="topbar-btn" onclick="savePDF()">⬇ PDF</button>
     </div>
@@ -517,7 +535,7 @@ tr:hover td{background:var(--surface2);}
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">Stock</span>
-    <div class="topbar-actions">
+    <div class="topbar-actions"><button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
       <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge2"></span></button>
       <button class="topbar-btn" onclick="saveStockPDF()">⬇ PDF</button>
     </div>
@@ -532,7 +550,7 @@ tr:hover td{background:var(--surface2);}
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">🔔 Task Reminders</span>
-    <div class="topbar-actions">
+    <div class="topbar-actions"><button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
       <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge3"></span></button>
       <button class="topbar-btn" onclick="saveTaskPDF()">⬇ PDF</button>
     </div>
@@ -1854,6 +1872,23 @@ function closeImageViewer(){
   document.getElementById('imageViewerImg').src='';
 }
 
+function openMenu(){
+  document.getElementById('menuDrawer').classList.add('open');
+  document.getElementById('menuDateSub').textContent =
+    new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // Sync inbox badge in menu
+  const bellBadge = document.getElementById('bellBadge1');
+  const menuBadge = document.getElementById('menuInboxBadge');
+  const count = bellBadge ? bellBadge.textContent : '';
+  if(menuBadge){
+    menuBadge.textContent = count;
+    menuBadge.style.display = count ? 'inline-block' : 'none';
+  }
+}
+function closeMenu(){
+  document.getElementById('menuDrawer').classList.remove('open');
+}
+
 function showCloudinarySetup(){
   document.getElementById('cldCloudInput').value  = localStorage.getItem('cld_cloud') ||'';
   document.getElementById('cldPresetInput').value = localStorage.getItem('cld_preset')||'';
@@ -1871,10 +1906,14 @@ function saveCloudinaryConfig(){
 }
 function updateCloudinaryStatus(){
   const cloud = localStorage.getItem('cld_cloud');
-  const el    = document.getElementById('cloudinaryStatus');
-  if(el) el.textContent = cloud && cloud!=='YOUR_CLOUD_NAME'
-    ? '✅ Connected — '+cloud
-    : 'Not configured — tap Setup';
+  const connected = cloud && cloud !== 'YOUR_CLOUD_NAME';
+  const statusText = connected ? '✅ Connected — '+cloud : 'Tap to configure';
+  // Update home (may not exist)
+  const el = document.getElementById('cloudinaryStatus');
+  if(el) el.textContent = connected ? '✅ Connected — '+cloud : 'Not configured — tap Setup';
+  // Update menu item
+  const menuEl = document.getElementById('menuCloudinaryStatus');
+  if(menuEl) menuEl.textContent = statusText;
 }
 
 // ═══════════════ LOAD FROM CLOUD ═══════════════
@@ -1911,7 +1950,7 @@ loadFromCloud();
   <div class="topbar">
     <button class="topbar-back" onclick="goHome()">‹</button>
     <span class="topbar-title">💰 Income</span>
-    <div class="topbar-actions">
+    <div class="topbar-actions"><button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
       <button class="bell-btn" onclick="openInbox()" title="Alerts"><span>✉️</span><span class="bell-count-badge" id="bellBadge4"></span></button>
       <button class="topbar-btn" onclick="saveIncomePDF()">⬇ PDF</button>
     </div>
@@ -2088,6 +2127,80 @@ loadFromCloud();
     <div class="inbox-drawer-body" id="inboxPanelBody">
       <div style="text-align:center;color:var(--muted2);padding:20px;">Loading...</div>
     </div>
+  </div>
+</div>
+
+<!-- HAMBURGER MENU DRAWER -->
+<div class="menu-drawer-ov" id="menuDrawer">
+  <div class="menu-backdrop" onclick="closeMenu()"></div>
+  <div class="menu-drawer">
+
+    <!-- Header -->
+    <div class="menu-drawer-head">
+      <div class="menu-drawer-logo">PS</div>
+      <div style="font-size:0.95rem;font-weight:700;opacity:0.9;margin-top:2px;">Expense Manager</div>
+      <div class="menu-drawer-sub" id="menuDateSub"></div>
+    </div>
+
+    <div class="menu-scroll">
+
+      <!-- Navigation -->
+      <div class="menu-section-title">Sections</div>
+      <div class="menu-item" onclick="closeMenu();openExpense()">
+        <div class="menu-item-icon" style="background:#fde8e8;">💸</div>
+        <div><div class="menu-item-label">Expenses</div><div class="menu-item-desc">Transactions &amp; bills</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openIncome()">
+        <div class="menu-item-icon" style="background:#def7ec;">💰</div>
+        <div><div class="menu-item-label">Income</div><div class="menu-item-desc">Receipts &amp; payments</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openStock()">
+        <div class="menu-item-icon" style="background:#ebf0ff;">📦</div>
+        <div><div class="menu-item-label">Stock</div><div class="menu-item-desc">Inventory &amp; usage</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openTask()">
+        <div class="menu-item-icon" style="background:#fef9c3;">🔔</div>
+        <div><div class="menu-item-label">Task Reminders</div><div class="menu-item-desc">Due dates &amp; alerts</div></div>
+      </div>
+
+      <div class="menu-divider"></div>
+
+      <!-- Settings -->
+      <div class="menu-section-title">Settings</div>
+
+      <!-- Image Upload (Cloudinary) -->
+      <div class="menu-item" onclick="closeMenu();showCloudinarySetup()">
+        <div class="menu-item-icon" style="background:#f3e8ff;">☁️</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Image Upload</div>
+          <div class="menu-item-desc" id="menuCloudinaryStatus">Not configured</div>
+        </div>
+        <span style="font-size:0.75rem;color:#9ca3af;">›</span>
+      </div>
+
+      <!-- Alerts Inbox -->
+      <div class="menu-item" onclick="closeMenu();openInbox()">
+        <div class="menu-item-icon" style="background:#fef9c3;">✉️</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Alerts &amp; Inbox</div>
+          <div class="menu-item-desc">Task due reminders</div>
+        </div>
+        <span id="menuInboxBadge" style="display:none;background:#c81e1e;color:#fff;border-radius:20px;font-size:0.65rem;font-weight:800;padding:2px 8px;"></span>
+      </div>
+
+      <div class="menu-divider"></div>
+
+      <!-- App info -->
+      <div class="menu-section-title">About</div>
+      <div class="menu-item" style="cursor:default;">
+        <div class="menu-item-icon" style="background:#f3f4f6;">ℹ️</div>
+        <div>
+          <div class="menu-item-label">PS Expense Manager</div>
+          <div class="menu-item-desc">Free · Firebase · Cloudinary</div>
+        </div>
+      </div>
+
+    </div><!-- end menu-scroll -->
   </div>
 </div>
 
