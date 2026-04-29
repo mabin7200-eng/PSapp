@@ -1984,13 +1984,21 @@ async function uploadToCloudinary(file, prefix, isPDF){
 }
 
 function clearFile(prefix){
-  document.getElementById(prefix+'FileInput').value  = '';
-  document.getElementById(prefix+'AttachUrl').value  = '';
-  document.getElementById(prefix+'AttachType').value = '';
-  document.getElementById(prefix+'UploadPrompt').style.display = 'block';
-  document.getElementById(prefix+'FilePreview').style.display  = 'none';
-  document.getElementById(prefix+'UploadProgress').style.display='none';
-  document.getElementById(prefix+'PreviewContent').innerHTML   = '';
+  // File input ID varies — try both naming conventions
+  const fileInput = document.getElementById(prefix+'FileInput') || document.getElementById(prefix+'File');
+  if(fileInput) fileInput.value='';
+  const urlEl = document.getElementById(prefix+'AttachUrl');
+  const typeEl = document.getElementById(prefix+'AttachType');
+  const promptEl = document.getElementById(prefix+'UploadPrompt');
+  const previewEl = document.getElementById(prefix+'FilePreview');
+  const progressEl = document.getElementById(prefix+'UploadProgress');
+  const contentEl = document.getElementById(prefix+'PreviewContent');
+  if(urlEl)     urlEl.value='';
+  if(typeEl)    typeEl.value='';
+  if(promptEl)  promptEl.style.display='block';
+  if(previewEl) previewEl.style.display='none';
+  if(progressEl)progressEl.style.display='none';
+  if(contentEl) contentEl.innerHTML='';
 }
 
 function resetUpload(prefix){
