@@ -2885,6 +2885,163 @@ async function saveCurrentKms(){
   alert(`✅ KMS updated for ${vName}!`);
 }
 
+// ═══════════════ BACKUP & RESTORE ═══════════════
+
+function getAllData(){
+  return {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    exportedBy: 'PS Expense Manager',
+    transactions,
+    stock,
+    tasks,
+    incomes,
+    docs,
+    vehicles,
+    maintRecords,
+    vehicleKms,
+    units,
+    names,
+    items: JSON.parse(localStorage.getItem('items_db')||'[]'),
+    incomeNames,
+    docNames,
+  };
+}
+
+function exportBackup(){
+  try {
+    const data     = getAllData();
+    const json     = JSON.stringify(data, null, 2);
+    const blob     = new Blob([json], { type: 'application/json' });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    const dateStr  = new Date().toISOString().slice(0,10);
+    a.href         = url;
+    a.download     = `PS_Expense_Backup_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // Save last backup time
+    localStorage.setItem('lastBackup', new Date().toISOString());
+    updateLastBackupLabel();
+    showToast('✅ Backup downloaded successfully!', 'green');
+  } catch(e){
+    showToast('❌ Backup failed: ' + e.message, 'red');
+  }
+}
+
+async function importBackup(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    try {
+      const data = JSON.parse(e.target.result);
+
+      // Validate it's a PS Expense backup
+      if(!data.exportedBy || !data.exportedBy.includes('PS Expense')){
+        showToast('❌ Invalid backup file. Only PS Expense backups supported.', 'red');
+        return;
+      }
+
+      const count = [
+        data.transactions?.length||0,
+        data.incomes?.length||0,
+        data.tasks?.length||0,
+        data.docs?.length||0,
+        data.vehicles?.length||0,
+        data.maintRecords?.length||0,
+      ].reduce((a,b)=>a+b,0);
+
+      const confirm1 = confirm(
+        `⚠️ Restore from backup?\n\n` +
+        `Backup date: ${data.exportedAt?.slice(0,10)||'Unknown'}\n` +
+        `Records found: ${count} total\n\n` +
+        `This will REPLACE all current data.\n` +
+        `Make sure you export current data first!\n\nContinue?`
+      );
+      if(!confirm1) return;
+
+      // Restore all data
+      if(data.transactions) { transactions = data.transactions; localStorage.setItem('txv2', JSON.stringify(transactions)); }
+      if(data.stock)        { stock        = data.stock;        localStorage.setItem('stockv2', JSON.stringify(stock)); }
+      if(data.tasks)        { tasks        = data.tasks;        localStorage.setItem('tasks_v1', JSON.stringify(tasks)); }
+      if(data.incomes)      { incomes      = data.incomes;      localStorage.setItem('incomes_v1', JSON.stringify(incomes)); }
+      if(data.docs)         { docs         = data.docs;         localStorage.setItem('docs_v1', JSON.stringify(docs)); }
+      if(data.vehicles)     { vehicles     = data.vehicles;     localStorage.setItem('vehicles_v1', JSON.stringify(vehicles)); }
+      if(data.maintRecords) { maintRecords = data.maintRecords; localStorage.setItem('maint_v1', JSON.stringify(maintRecords)); }
+      if(data.vehicleKms)   { vehicleKms   = data.vehicleKms;   localStorage.setItem('vehicleKms', JSON.stringify(vehicleKms)); }
+      if(data.units)        { units        = data.units;        localStorage.setItem('units', JSON.stringify(units)); }
+      if(data.names)        { names        = data.names;        localStorage.setItem('names', JSON.stringify(names)); }
+      if(data.incomeNames)  { incomeNames  = data.incomeNames;  localStorage.setItem('incomeNames', JSON.stringify(incomeNames)); }
+      if(data.docNames)     { docNames     = data.docNames;     localStorage.setItem('docNames', JSON.stringify(docNames)); }
+      if(data.items)        { localStorage.setItem('items_db', JSON.stringify(data.items)); }
+
+      // Sync restored data to Firebase
+      try {
+        await db.collection("userdata").doc("ps_enterprise_data").set({
+          transactions, stock, tasks, incomes, docs,
+          vehicles, maintRecords, vehicleKms,
+          lastUpdated: new Date().toISOString()
+        });
+        showToast('✅ Restore complete! Data synced to Firebase cloud.', 'green');
+      } catch(e2){
+        showToast('✅ Restore complete locally. Firebase sync failed — check connection.', 'orange');
+      }
+
+      renderHome();
+    } catch(e){
+      showToast('❌ Invalid file. Could not read backup.', 'red');
+    }
+  };
+  reader.readAsText(file);
+  input.value = ''; // reset input
+}
+
+function updateLastBackupLabel(){
+  const last = localStorage.getItem('lastBackup');
+  const el   = document.getElementById('lastBackupLabel');
+  if(!el) return;
+  if(!last){
+    el.textContent = 'No backup yet — tap to download';
+    el.style.color = '#d03801';
+  } else {
+    const d = new Date(last);
+    const days = Math.floor((Date.now()-d.getTime())/(1000*60*60*24));
+    el.textContent = days===0?'Last backup: Today ✅'
+      : days===1?'Last backup: Yesterday'
+      : `Last backup: ${days} days ago ${days>7?'⚠️ Overdue!':''}`;
+    el.style.color = days>7?'#d03801':'#057a55';
+  }
+}
+
+// Toast notification
+function showToast(msg, color='green'){
+  let toast = document.getElementById('appToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'appToast';
+    toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:9999;padding:12px 20px;border-radius:12px;font-size:0.85rem;font-weight:700;font-family:Barlow,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,0.2);transition:opacity 0.3s;max-width:90vw;text-align:center;';
+    document.body.appendChild(toast);
+  }
+  const colors = {
+    green:  {bg:'#057a55', text:'#fff'},
+    red:    {bg:'#c81e1e', text:'#fff'},
+    orange: {bg:'#d03801', text:'#fff'},
+  };
+  const c = colors[color]||colors.green;
+  toast.style.background  = c.bg;
+  toast.style.color       = c.text;
+  toast.textContent       = msg;
+  toast.style.opacity     = '1';
+  toast.style.display     = 'block';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=>toast.style.display='none',300); }, 3500);
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
@@ -2912,6 +3069,7 @@ async function loadFromCloud(){
   const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
   updateBellBadge(ov+ds);
   updateCloudinaryStatus();
+  updateLastBackupLabel();
   renderHome();
 }
 loadFromCloud();
@@ -3658,6 +3816,26 @@ loadFromCloud();
           <div class="menu-item-desc">Free · Firebase · Cloudinary</div>
         </div>
       </div>
+
+      <div class="menu-divider"></div>
+
+      <!-- Backup & Restore -->
+      <div class="menu-section-title">Data Safety</div>
+      <div class="menu-item" onclick="closeMenu();exportBackup()">
+        <div class="menu-item-icon" style="background:#def7ec;">⬇️</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Export Backup</div>
+          <div class="menu-item-desc" id="lastBackupLabel">Download all data as JSON file</div>
+        </div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();document.getElementById('restoreFileInput').click()">
+        <div class="menu-item-icon" style="background:#ebf0ff;">⬆️</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Restore from Backup</div>
+          <div class="menu-item-desc">Import a backup JSON file</div>
+        </div>
+      </div>
+      <input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="importBackup(this)"/>
 
     </div><!-- end menu-scroll -->
   </div>
