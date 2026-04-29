@@ -1807,10 +1807,11 @@ function renderInboxScreen(){
     const isOver = t.type==='overdue';
     const icon   = isOver ? '🔴' : '🟡';
     let msg='', actionBtn='', subInfo='';
-    } else if(t.section==='maint'){
+
+    if(t.section==='maint'){
       msg = t.rem<=0
-        ? `⚠️ Service OVERDUE — ${Math.abs(t.curKms - t.nextKms).toLocaleString()} KMS past due!`
-        : `Only ${t.rem.toLocaleString()} KMS remaining to next service (${t.nextKms.toLocaleString()} KMS)`;
+        ? `⚠️ Service OVERDUE — past due!`
+        : `Only ${t.rem.toLocaleString()} KMS remaining (next service: ${t.nextKms.toLocaleString()} KMS)`;
       subInfo = `<div style="font-size:0.72rem;color:#6b7280;margin-top:4px;">🔧 Vehicle maintenance alert</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
           <span style="font-size:0.72rem;background:#fff7ed;color:#92400e;padding:2px 8px;border-radius:10px;">Current: ${t.curKms.toLocaleString()} KMS</span>
@@ -1818,7 +1819,9 @@ function renderInboxScreen(){
         </div>`;
       actionBtn = `<button onclick="openMaint()" style="flex:1;background:#ea580c;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.82rem;cursor:pointer;">🔧 View Maintenance</button>
         <button onclick="openKmsModal()" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:0.82rem;cursor:pointer;">Update KMS</button>`;
-    if(t.section==='doc'||t.section==='vehicle'){      msg = isOver
+
+    } else if(t.section==='doc'||t.section==='vehicle'){
+      msg = isOver
         ? `Expired ${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} ago — renew immediately!`
         : t.d===0 ? '⚡ Expires TODAY!'
         : t.d===1 ? '⚡ Expires Tomorrow!'
@@ -1829,6 +1832,7 @@ function renderInboxScreen(){
       actionBtn = t.section==='vehicle'
         ? `<button onclick="openVehicles()" style="flex:1;background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.82rem;cursor:pointer;">🚗 View Vehicles</button>`
         : `<button onclick="openDocs()" style="flex:1;background:#1a56db;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.82rem;cursor:pointer;">📂 View Documents</button>`;
+
     } else {
       const nextD = taskNextDate(t.lastDate, t.freq);
       msg = isOver
@@ -1841,6 +1845,7 @@ function renderInboxScreen(){
       actionBtn = `<button onclick="inboxDone('${t.id}')" style="flex:1;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.85rem;cursor:pointer;">✓ Mark Done Today</button>
         <button onclick="openTask()" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:0.82rem;cursor:pointer;">View Tasks</button>`;
     }
+
     return `
       <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:12px;overflow:hidden;border:1px solid ${isOver?'#fca5a5':'#fdba74'};">
         <div style="height:4px;background:${isOver?'var(--red)':'var(--orange)'}"></div>
