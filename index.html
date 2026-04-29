@@ -300,6 +300,9 @@ tr:hover td{background:var(--surface2);}
 .home-card.vehicle-card{background:linear-gradient(135deg,#fdf4ff,#f3e8ff);border-color:#d8b4fe;}
 .home-card.vehicle-card::after{background:#7c3aed;}
 .home-card.vehicle-card .home-card-amount{color:#5b21b6;}
+.home-card.maint-card{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#fdba74;}
+.home-card.maint-card::after{background:#ea580c;}
+.home-card.maint-card .home-card-amount{color:#9a3412;}
 
 /* EMPTY */
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted2);}
@@ -383,6 +386,13 @@ tr:hover td{background:var(--surface2);}
       <div class="home-card-label">Vehicle Documents</div>
       <div class="home-card-amount" id="homeVehicleCount">0</div>
       <div class="home-card-sub">vehicles — <span id="homeVehicleExpiry">all valid</span></div>
+      <span class="home-card-arrow">›</span>
+    </div>
+    <div class="home-card maint-card" onclick="openMaint()" style="grid-column:1/-1;">
+      <span class="home-card-icon">🔧</span>
+      <div class="home-card-label">Vehicle Maintenance</div>
+      <div class="home-card-amount" id="homeMaintCount">0</div>
+      <div class="home-card-sub">records — <span id="homeMaintAlert">all good</span></div>
       <span class="home-card-arrow">›</span>
     </div>
   </div>
@@ -709,6 +719,8 @@ async function save() {
       docs: docs,
       docNames: docNames,
       vehicles: vehicles,
+      maintRecords: maintRecords,
+      vehicleKms: vehicleKms,
       lastUpdated: new Date().toISOString()
     });
   } catch(e) { console.error("Cloud Sync Error", e); }
@@ -728,6 +740,7 @@ function closeAdd(){showScreen('expense');renderExpense();}
 function openIncome(){showScreen('income');renderIncome();}
 function openDocs(){showScreen('docs');renderDocs();}
 function openVehicles(){showScreen('vehicle');renderVehicles();}
+function openMaint(){showScreen('maint');renderMaint();}
 
 // ═══════════════ HOME ═══════════════
 function renderHome(){
@@ -767,7 +780,20 @@ function renderHome(){
   if(hvc2) hvc2.textContent=vehicles.length;
   if(hve2) hve2.textContent=vehicleExpiring>0?vehicleExpiring+' expiring soon ⚠️':'all valid';
 
-  updateBellBadge(overdue+dueSoon+docExpiring+vehicleExpiring);
+  // Maintenance KMS alerts
+  const kmsAlertCount = maintVehicleNames().filter(vName=>{
+    const latest=[...maintRecords].filter(r=>r.vehicleName===vName&&r.nextKms).sort((a,b)=>b.createdAt-a.createdAt)[0];
+    if(!latest) return false;
+    const curKms=vehicleKms[vName];
+    if(curKms==null) return false;
+    return (latest.nextKms - curKms) < 500;
+  }).length;
+  const hmc2=document.getElementById('homeMaintCount');
+  const hma2=document.getElementById('homeMaintAlert');
+  if(hmc2) hmc2.textContent=maintRecords.length;
+  if(hma2) hma2.textContent=kmsAlertCount>0?kmsAlertCount+' service due ⚠️':'all good';
+
+  updateBellBadge(overdue+dueSoon+docExpiring+vehicleExpiring+kmsAlertCount);
   renderInbox();
 }
 
@@ -1737,6 +1763,27 @@ function renderInboxScreen(){
     });
   });
 
+  // Maintenance KMS alerts
+  maintVehicleNames().forEach(vName=>{
+    const latest=[...maintRecords]
+      .filter(r=>r.vehicleName===vName&&r.nextKms)
+      .sort((a,b)=>b.createdAt-a.createdAt)[0];
+    if(!latest) return;
+    const curKms=vehicleKms[vName];
+    if(curKms==null) return;
+    const rem=latest.nextKms - curKms;
+    if(rem < 500){
+      alerts.push({
+        id:'kms_'+vName,
+        name:`🔧 ${vName} — Service Due`,
+        d: rem<=0?-1:0,
+        type: rem<=0?'overdue':'due-soon',
+        section:'maint',
+        rem, nextKms:latest.nextKms, curKms
+      });
+    }
+  });
+
   alerts.sort((a,b)=>a.d-b.d);
 
   // Update badge on screen header
@@ -1760,8 +1807,18 @@ function renderInboxScreen(){
     const isOver = t.type==='overdue';
     const icon   = isOver ? '🔴' : '🟡';
     let msg='', actionBtn='', subInfo='';
-    if(t.section==='doc'||t.section==='vehicle'){
-      msg = isOver
+    } else if(t.section==='maint'){
+      msg = t.rem<=0
+        ? `⚠️ Service OVERDUE — ${Math.abs(t.curKms - t.nextKms).toLocaleString()} KMS past due!`
+        : `Only ${t.rem.toLocaleString()} KMS remaining to next service (${t.nextKms.toLocaleString()} KMS)`;
+      subInfo = `<div style="font-size:0.72rem;color:#6b7280;margin-top:4px;">🔧 Vehicle maintenance alert</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          <span style="font-size:0.72rem;background:#fff7ed;color:#92400e;padding:2px 8px;border-radius:10px;">Current: ${t.curKms.toLocaleString()} KMS</span>
+          <span style="font-size:0.72rem;background:#fff7ed;color:#92400e;padding:2px 8px;border-radius:10px;">Next service: ${t.nextKms.toLocaleString()} KMS</span>
+        </div>`;
+      actionBtn = `<button onclick="openMaint()" style="flex:1;background:#ea580c;color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:0.82rem;cursor:pointer;">🔧 View Maintenance</button>
+        <button onclick="openKmsModal()" style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:0.82rem;cursor:pointer;">Update KMS</button>`;
+    if(t.section==='doc'||t.section==='vehicle'){      msg = isOver
         ? `Expired ${Math.abs(t.d)} day${Math.abs(t.d)!==1?'s':''} ago — renew immediately!`
         : t.d===0 ? '⚡ Expires TODAY!'
         : t.d===1 ? '⚡ Expires Tomorrow!'
@@ -2532,6 +2589,289 @@ async function deleteVehicle(id){
   closeVehicleDetail(); renderVehicles(); renderHome();
 }
 
+// ═══════════════ VEHICLE MAINTENANCE ═══════════════
+let maintRecords  = JSON.parse(localStorage.getItem('maint_v1')||'[]');
+let vehicleKms    = JSON.parse(localStorage.getItem('vehicleKms')||'{}'); // {vehicleName: currentKms}
+let maintFilterV  = 'all';
+
+function openMaint(){ showScreen('maint'); renderMaint(); }
+
+function calcRemainingKms(){
+  const changed = parseInt(document.getElementById('mChangedKms').value)||0;
+  const next    = parseInt(document.getElementById('mNextKms').value)||0;
+  const out     = document.getElementById('mRemainingKms');
+  if(changed && next){
+    const rem = next - changed;
+    out.value = rem > 0 ? rem.toLocaleString()+' KMS' : '⚠️ Already due!';
+    out.style.color = rem < 500 ? '#c81e1e' : rem < 1000 ? '#d03801' : '#057a55';
+  } else { out.value=''; }
+}
+
+function maintVehicleNames(){
+  // Get unique vehicle names from maintenance records + vehicle docs section
+  const fromMaint    = maintRecords.map(r=>r.vehicleName).filter(Boolean);
+  const fromVehicles = vehicles.map(v=>v.name).filter(Boolean);
+  return [...new Set([...fromVehicles,...fromMaint])];
+}
+
+function setMaintFilter(f, el){
+  maintFilterV = f;
+  document.querySelectorAll('.maint-filter').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderMaint();
+}
+
+function renderMaint(){
+  const list  = document.getElementById('maintList');
+  const strip = document.getElementById('maintAlertStrip');
+
+  // Build vehicle filter tabs
+  const tabsEl = document.getElementById('maintVehicleFilters');
+  if(tabsEl){
+    const vNames = maintVehicleNames();
+    tabsEl.innerHTML = vNames.map(n=>
+      `<div class="filter-chip maint-filter${maintFilterV===n?' active':''}" onclick="setMaintFilter('${n}',this)">${n}</div>`
+    ).join('');
+  }
+
+  // KMS alerts
+  const kmsAlerts = [];
+  maintVehicleNames().forEach(vName=>{
+    const latest = [...maintRecords]
+      .filter(r=>r.vehicleName===vName && r.nextKms)
+      .sort((a,b)=>b.createdAt-a.createdAt)[0];
+    if(!latest) return;
+    const curKms = vehicleKms[vName];
+    if(curKms === undefined || curKms === null) return;
+    const rem = latest.nextKms - curKms;
+    if(rem < 500) kmsAlerts.push({vName, rem, nextKms:latest.nextKms, curKms});
+  });
+
+  // Alert strip
+  if(kmsAlerts.length && strip){
+    strip.style.display='block';
+    strip.innerHTML='⚠️ Service due: '+kmsAlerts.map(a=>
+      `${a.vName}: ${a.rem<=0?'OVERDUE':'only '+a.rem+' KMS remaining'}`
+    ).join(' | ');
+  } else if(strip){ strip.style.display='none'; }
+
+  // Home card update
+  const hmc=document.getElementById('homeMaintCount');
+  const hma=document.getElementById('homeMaintAlert');
+  if(hmc) hmc.textContent=maintRecords.length;
+  if(hma) hma.textContent=kmsAlerts.length>0?kmsAlerts.length+' service due ⚠️':'all good';
+
+  // Filter
+  let filtered = [...maintRecords];
+  if(maintFilterV!=='all') filtered=filtered.filter(r=>r.vehicleName===maintFilterV);
+  filtered.sort((a,b)=>b.createdAt-a.createdAt);
+
+  if(!list) return;
+  if(!filtered.length){
+    list.innerHTML=`<div class="empty-state"><span class="ei">🔧</span>No maintenance records yet.<br/>Tap <b>+</b> to add first record.</div>`;
+    return;
+  }
+
+  // Group by vehicle name
+  const grouped = {};
+  filtered.forEach(r=>{
+    if(!grouped[r.vehicleName]) grouped[r.vehicleName]=[];
+    grouped[r.vehicleName].push(r);
+  });
+
+  list.innerHTML = Object.entries(grouped).map(([vName, recs])=>{
+    const latest = [...recs].sort((a,b)=>b.createdAt-a.createdAt)[0];
+    const curKms = vehicleKms[vName];
+    const rem    = (latest?.nextKms && curKms!=null) ? latest.nextKms - curKms : null;
+    const kmsColor = rem===null?'#6b7280':rem<=0?'#c81e1e':rem<500?'#c81e1e':rem<1000?'#d03801':'#057a55';
+
+    return `
+    <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:16px;border:1px solid #e2e5eb;overflow:hidden;">
+      <!-- Vehicle header -->
+      <div style="background:linear-gradient(135deg,#ea580c,#dc2626);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#fff;">🔧 ${vName}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);margin-top:1px;">
+            ${recs.length} record${recs.length!==1?'s':''}
+            ${latest?.nextKms?` · Next service: ${latest.nextKms.toLocaleString()} KMS`:''}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          ${curKms!=null?`<div style="font-size:0.68rem;color:rgba(255,255,255,0.7);">Current KMS</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#fff;">${curKms.toLocaleString()}</div>`:''}
+        </div>
+      </div>
+      <!-- KMS remaining bar -->
+      ${rem!==null?`
+      <div style="padding:10px 16px;background:#fff7ed;border-bottom:1px solid #fed7aa;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.78rem;font-weight:700;color:#92400e;">Remaining to next service:</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:${kmsColor};">
+            ${rem<=0?'⚠️ OVERDUE':rem.toLocaleString()+' KMS'}
+          </span>
+        </div>
+        ${rem<500&&rem>0?`<div style="font-size:0.72rem;color:#c81e1e;font-weight:700;margin-top:2px;">⚠️ Service due very soon!</div>`:''}
+        ${rem<=0?`<div style="font-size:0.72rem;color:#c81e1e;font-weight:700;margin-top:2px;">⚠️ Past service KMS — service overdue!</div>`:''}
+      </div>`:''}
+      <!-- Records -->
+      <div style="padding:0;">
+        ${recs.map((r,i)=>`
+          <div style="padding:12px 16px;border-bottom:${i<recs.length-1?'1px solid #f3f4f6':'none'};display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:36px;height:36px;background:#fff7ed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">🔧</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:0.9rem;">${r.particular||'Maintenance'}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                <span style="font-size:0.72rem;color:#6b7280;">📅 ${fmtDate(r.date)}</span>
+                ${r.amount?`<span style="font-size:0.72rem;font-weight:700;color:#c81e1e;">💰 ${fmt(r.amount)}</span>`:''}
+                ${r.changedKms?`<span style="font-size:0.72rem;color:#6b7280;">🔄 ${r.changedKms.toLocaleString()} KMS</span>`:''}
+                ${r.nextKms?`<span style="font-size:0.72rem;color:#6b7280;">⏭ Next: ${r.nextKms.toLocaleString()} KMS</span>`:''}
+              </div>
+              ${r.remarks?`<div style="font-size:0.72rem;color:#9ca3af;margin-top:3px;font-style:italic;">📝 ${r.remarks}</div>`:''}
+              ${r.mBillAttachUrl?`<div style="margin-top:6px;">${attachmentHTML(r.mBillAttachUrl,r.mBillAttachType)}</div>`:''}
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              <button onclick="openMaintModal('${r.id}')" style="background:#f3f4f6;border:none;border-radius:8px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">✏️</button>
+              <button onclick="deleteMaint('${r.id}')" style="background:#fde8e8;border:none;border-radius:8px;padding:5px 8px;font-size:0.72rem;cursor:pointer;color:#c81e1e;">🗑</button>
+            </div>
+          </div>`
+        ).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openMaintModal(id){
+  document.getElementById('mEditId').value=id||'';
+  document.getElementById('maintModalTitle').textContent=id?'Edit Record':'Add Maintenance Record';
+  // Populate vehicle datalist
+  document.getElementById('mVehicleList').innerHTML=maintVehicleNames().map(n=>`<option value="${n}"/>`).join('');
+  resetUpload('mBill');
+  if(id){
+    const r=maintRecords.find(r=>r.id===id);
+    if(!r) return;
+    document.getElementById('mVehicleName').value=r.vehicleName||'';
+    document.getElementById('mDate').value=r.date||'';
+    document.getElementById('mParticular').value=r.particular||'';
+    document.getElementById('mAmount').value=r.amount||'';
+    document.getElementById('mChangedKms').value=r.changedKms||'';
+    document.getElementById('mNextKms').value=r.nextKms||'';
+    document.getElementById('mRemarks').value=r.remarks||'';
+    document.getElementById('mBillAttachUrl').value=r.mBillAttachUrl||'';
+    document.getElementById('mBillAttachType').value=r.mBillAttachType||'';
+    if(r.mBillAttachUrl){
+      document.getElementById('mBillUploadPrompt').style.display='none';
+      document.getElementById('mBillFilePreview').style.display='block';
+      const isPDF=r.mBillAttachType==='pdf';
+      document.getElementById('mBillPreviewContent').innerHTML=isPDF
+        ?`<div style="font-size:2rem;">📄</div><div style="font-size:0.82rem;font-weight:600;">Bill PDF attached</div>`
+        :`<img src="${r.mBillAttachUrl}" style="max-height:80px;max-width:100%;border-radius:8px;object-fit:contain;"/>`;
+    }
+    calcRemainingKms();
+  } else {
+    document.getElementById('mVehicleName').value='';
+    document.getElementById('mDate').valueAsDate=new Date();
+    document.getElementById('mParticular').value='';
+    document.getElementById('mAmount').value='';
+    document.getElementById('mChangedKms').value='';
+    document.getElementById('mNextKms').value='';
+    document.getElementById('mRemarks').value='';
+    document.getElementById('mRemainingKms').value='';
+  }
+  document.getElementById('maintModal').style.display='flex';
+}
+function closeMaintModal(){ document.getElementById('maintModal').style.display='none'; }
+
+async function saveMaint(){
+  const vehicleName=document.getElementById('mVehicleName').value.trim();
+  const date=document.getElementById('mDate').value;
+  const particular=document.getElementById('mParticular').value.trim();
+  if(!vehicleName){ alert('Enter Vehicle Name'); return; }
+  if(!date){ alert('Select Date'); return; }
+
+  const id=document.getElementById('mEditId').value;
+  const entry={
+    id: id||'m_'+Date.now(),
+    vehicleName, date, particular,
+    amount: parseFloat(document.getElementById('mAmount').value)||0,
+    changedKms: parseInt(document.getElementById('mChangedKms').value)||0,
+    nextKms: parseInt(document.getElementById('mNextKms').value)||0,
+    remarks: document.getElementById('mRemarks').value.trim(),
+    mBillAttachUrl:  document.getElementById('mBillAttachUrl').value,
+    mBillAttachType: document.getElementById('mBillAttachType').value,
+    createdAt: id ? (maintRecords.find(r=>r.id===id)?.createdAt||Date.now()) : Date.now()
+  };
+
+  if(id){ const idx=maintRecords.findIndex(r=>r.id===id); if(idx>-1) maintRecords[idx]=entry; }
+  else maintRecords.push(entry);
+
+  localStorage.setItem('maint_v1',JSON.stringify(maintRecords));
+  try{ await db.collection("userdata").doc("ps_enterprise_data").update({maintRecords}); }catch(e){}
+  closeMaintModal(); renderMaint(); renderHome();
+  alert('✅ Record saved!');
+}
+
+async function deleteMaint(id){
+  if(!confirm('Delete this record?')) return;
+  maintRecords=maintRecords.filter(r=>r.id!==id);
+  localStorage.setItem('maint_v1',JSON.stringify(maintRecords));
+  try{ await db.collection("userdata").doc("ps_enterprise_data").update({maintRecords}); }catch(e){}
+  renderMaint(); renderHome();
+}
+
+// ── Update Current KMS Modal ──────────────────
+function openKmsModal(){
+  const sel=document.getElementById('kmsVehicleSelect');
+  const vNames=maintVehicleNames();
+  if(!vNames.length){ alert('Add a maintenance record first to set up KMS tracking.'); return; }
+  sel.innerHTML=vNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+  loadVehicleKmsInfo();
+  document.getElementById('kmsCurrentInput').value='';
+  document.getElementById('kmsPreviewRemaining').textContent='';
+  document.getElementById('kmsModal').style.display='flex';
+}
+function closeKmsModal(){ document.getElementById('kmsModal').style.display='none'; }
+
+function loadVehicleKmsInfo(){
+  const vName=document.getElementById('kmsVehicleSelect').value;
+  const latest=[...maintRecords]
+    .filter(r=>r.vehicleName===vName&&r.nextKms)
+    .sort((a,b)=>b.createdAt-a.createdAt)[0];
+  const curKms=vehicleKms[vName];
+  document.getElementById('kmsLastService').textContent=latest?.changedKms?latest.changedKms.toLocaleString()+' KMS':'—';
+  document.getElementById('kmsNextService').textContent=latest?.nextKms?latest.nextKms.toLocaleString()+' KMS':'—';
+  document.getElementById('kmsCurrentDisplay').textContent=curKms!=null?curKms.toLocaleString()+' KMS':'Not set';
+  const rem=(latest?.nextKms&&curKms!=null)?latest.nextKms-curKms:null;
+  const remEl=document.getElementById('kmsRemainingDisplay');
+  if(rem===null){ remEl.textContent='—'; remEl.style.color='#6b7280'; }
+  else if(rem<=0){ remEl.textContent='OVERDUE!'; remEl.style.color='#c81e1e'; }
+  else{ remEl.textContent=rem.toLocaleString()+' KMS'; remEl.style.color=rem<500?'#c81e1e':rem<1000?'#d03801':'#057a55'; }
+  previewKmsRemaining();
+}
+
+function previewKmsRemaining(){
+  const vName=document.getElementById('kmsVehicleSelect').value;
+  const newKms=parseInt(document.getElementById('kmsCurrentInput').value)||null;
+  const latest=[...maintRecords]
+    .filter(r=>r.vehicleName===vName&&r.nextKms)
+    .sort((a,b)=>b.createdAt-a.createdAt)[0];
+  const el=document.getElementById('kmsPreviewRemaining');
+  if(!newKms||!latest?.nextKms){ el.textContent=''; return; }
+  const rem=latest.nextKms-newKms;
+  el.textContent=rem<=0?'⚠️ Service OVERDUE!':`Remaining after update: ${rem.toLocaleString()} KMS ${rem<500?'⚠️ Very close!':''}`;
+  el.style.color=rem<=0?'#c81e1e':rem<500?'#c81e1e':'#057a55';
+}
+
+async function saveCurrentKms(){
+  const vName=document.getElementById('kmsVehicleSelect').value;
+  const kms=parseInt(document.getElementById('kmsCurrentInput').value)||null;
+  if(!kms){ alert('Enter current KMS reading'); return; }
+  vehicleKms[vName]=kms;
+  localStorage.setItem('vehicleKms',JSON.stringify(vehicleKms));
+  try{ await db.collection("userdata").doc("ps_enterprise_data").update({vehicleKms}); }catch(e){}
+  closeKmsModal(); renderMaint(); renderHome();
+  alert(`✅ KMS updated for ${vName}!`);
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 // Firebase is source of truth — load on every startup
 async function loadFromCloud(){
@@ -2550,6 +2890,8 @@ async function loadFromCloud(){
       if(data.docs)        { docs=data.docs;                 localStorage.setItem('docs_v1',JSON.stringify(docs)); }
       if(data.docNames)    { docNames=data.docNames;         localStorage.setItem('docNames',JSON.stringify(docNames)); }
       if(data.vehicles)    { vehicles=data.vehicles;         localStorage.setItem('vehicles_v1',JSON.stringify(vehicles)); }
+      if(data.maintRecords){ maintRecords=data.maintRecords; localStorage.setItem('maint_v1',JSON.stringify(maintRecords)); }
+      if(data.vehicleKms)  { vehicleKms=data.vehicleKms;     localStorage.setItem('vehicleKms',JSON.stringify(vehicleKms)); }
     }
   } catch(e){ console.log("Offline — using local data"); }
   // Update bell badge on load
@@ -3014,6 +3356,156 @@ loadFromCloud();
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════
+     SCREEN: VEHICLE MAINTENANCE
+══════════════════════════════════════════ -->
+<div class="screen" id="screen-maint">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goHome()">‹</button>
+    <span class="topbar-title">🔧 Vehicle Maintenance</span>
+    <div class="topbar-actions">
+      <button class="hamburger-btn" onclick="openMenu()" style="width:34px;height:34px;gap:4px;"><span></span><span></span><span></span></button>
+      <button class="bell-btn" onclick="openInbox()"><span>✉️</span><span class="bell-count-badge" id="bellBadge7"></span></button>
+    </div>
+  </div>
+
+  <!-- KMS Alert strip -->
+  <div id="maintAlertStrip" style="display:none;background:#ea580c;color:#fff;padding:10px 16px;font-size:0.82rem;font-weight:700;"></div>
+
+  <!-- Vehicle filter tabs -->
+  <div style="background:#fff;border-bottom:1px solid #e2e5eb;padding:10px 16px;display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;">
+    <div class="filter-chip maint-filter active" onclick="setMaintFilter('all',this)">All Vehicles</div>
+    <div id="maintVehicleFilters"></div>
+  </div>
+
+  <div style="padding:14px 16px 90px;" id="maintList"></div>
+  <button class="fab visible" onclick="openMaintModal(null)">+</button>
+</div>
+
+<!-- MAINTENANCE ADD/EDIT MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;" id="maintModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;margin:auto;margin-top:16px;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <div style="background:linear-gradient(135deg,#ea580c,#dc2626);padding:16px 18px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;">
+      <h2 id="maintModalTitle" style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;">Add Maintenance Record</h2>
+      <button onclick="closeMaintModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:32px;height:32px;font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 18px;">
+      <input type="hidden" id="mEditId"/>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label>Vehicle Name</label>
+          <input type="text" id="mVehicleName" list="mVehicleList" placeholder="Select or type vehicle..."/>
+          <datalist id="mVehicleList"></datalist>
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="mDate"/>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label>Particular (Work Done)</label>
+        <input type="text" id="mParticular" placeholder="e.g. Oil change, Tyre rotation, Battery..."/>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label>Bill Amount (₹)</label>
+          <input type="number" id="mAmount" min="0" step="0.01" placeholder="0.00"/>
+        </div>
+        <div>
+          <label>KMS at Service (Changed KMS)</label>
+          <input type="number" id="mChangedKms" min="0" placeholder="e.g. 45000" oninput="calcRemainingKms()"/>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label>Next Service KMS</label>
+          <input type="number" id="mNextKms" min="0" placeholder="e.g. 50000" oninput="calcRemainingKms()"/>
+        </div>
+        <div>
+          <label>Remaining KMS (Auto)</label>
+          <input type="text" id="mRemainingKms" readonly style="background:#f0f2f5;font-weight:700;"/>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label>Remarks (Optional)</label>
+        <input type="text" id="mRemarks" placeholder="Any notes..."/>
+      </div>
+
+      <!-- Bill Upload -->
+      <div style="margin-bottom:14px;">
+        <label>Bill Copy (PDF / Image) — Optional</label>
+        <div style="border:2px dashed #e2e5eb;border-radius:10px;padding:12px;text-align:center;background:#f7f8fa;">
+          <input type="file" id="mBillFile" accept="image/*,.pdf" style="display:none;" onchange="handleFileSelect('mBill',this)"/>
+          <div id="mBillUploadPrompt">
+            <div style="font-size:1.3rem;margin-bottom:4px;">📎</div>
+            <div style="font-size:0.78rem;color:#6b7280;margin-bottom:6px;">Tap to attach bill PDF or image</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('mBillFile').click()">Choose File</button>
+          </div>
+          <div id="mBillFilePreview" style="display:none;">
+            <div id="mBillPreviewContent" style="margin-bottom:8px;"></div>
+            <div style="display:flex;gap:8px;justify-content:center;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('mBillFile').click()">Change</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearFile('mBill')">Remove</button>
+            </div>
+          </div>
+          <div id="mBillUploadProgress" style="display:none;font-size:0.82rem;color:#1a56db;padding:8px;">⏳ Uploading...</div>
+        </div>
+        <input type="hidden" id="mBillAttachUrl" value=""/>
+        <input type="hidden" id="mBillAttachType" value=""/>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-full" style="background:#ea580c;color:#fff;" onclick="saveMaint()">✓ Save Record</button>
+        <button class="btn btn-ghost" onclick="closeMaintModal()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE CURRENT KMS MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;" id="kmsModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+    <div style="background:linear-gradient(135deg,#ea580c,#dc2626);padding:16px 18px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;">
+      <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#fff;">🏎️ Update Current KMS</h3>
+      <button onclick="closeKmsModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:32px;height:32px;font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:18px;">
+      <div style="margin-bottom:12px;">
+        <label>Vehicle</label>
+        <select id="kmsVehicleSelect" onchange="loadVehicleKmsInfo()"></select>
+      </div>
+      <div style="background:#fff7ed;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.82rem;color:#374151;" id="kmsInfoBox">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="color:#6b7280;">Last Service KMS:</span><span id="kmsLastService" style="font-weight:700;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="color:#6b7280;">Next Service KMS:</span><span id="kmsNextService" style="font-weight:700;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="color:#6b7280;">Current KMS:</span><span id="kmsCurrentDisplay" style="font-weight:800;color:#ea580c;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:#6b7280;">Remaining:</span><span id="kmsRemainingDisplay" style="font-weight:800;">—</span>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label>Enter Current KMS Reading</label>
+        <input type="number" id="kmsCurrentInput" min="0" placeholder="e.g. 47500" oninput="previewKmsRemaining()"/>
+        <div style="font-size:0.75rem;margin-top:6px;font-weight:700;" id="kmsPreviewRemaining"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-full" style="background:#ea580c;color:#fff;" onclick="saveCurrentKms()">✓ Update KMS</button>
+        <button class="btn btn-ghost" onclick="closeKmsModal()">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- FULLSCREEN IMAGE VIEWER -->
 <div id="imageViewerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;" onclick="closeImageViewer()">
   <button onclick="closeImageViewer()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;z-index:1001;">✕</button>
@@ -3100,6 +3592,22 @@ loadFromCloud();
       <div class="menu-item" onclick="closeMenu();openTask()">
         <div class="menu-item-icon" style="background:#fef9c3;">🔔</div>
         <div><div class="menu-item-label">Task Reminders</div><div class="menu-item-desc">Due dates &amp; alerts</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openVehicles()">
+        <div class="menu-item-icon" style="background:#f3e8ff;">🚗</div>
+        <div><div class="menu-item-label">Vehicle Documents</div><div class="menu-item-desc">FC, Insurance, Tax, PUCC</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openMaint()">
+        <div class="menu-item-icon" style="background:#fff7ed;">🔧</div>
+        <div><div class="menu-item-label">Vehicle Maintenance</div><div class="menu-item-desc">Service records &amp; KMS tracking</div></div>
+      </div>
+      <div class="menu-item" onclick="closeMenu();openKmsModal()">
+        <div class="menu-item-icon" style="background:#fff7ed;">🏎️</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Update Current KMS</div>
+          <div class="menu-item-desc">Set odometer reading</div>
+        </div>
+        <span style="font-size:0.75rem;color:#9ca3af;">›</span>
       </div>
 
       <div class="menu-divider"></div>
