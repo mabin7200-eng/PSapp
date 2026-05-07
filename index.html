@@ -753,7 +753,7 @@ async function save() {
       maintRecords: maintRecords,
       vehicleKms: vehicleKms,
       lastUpdated: new Date().toISOString()
-    });
+    }, {merge:true});
   } catch(e) { console.error("Cloud Sync Error", e); }
 }
 
@@ -891,7 +891,7 @@ async function inboxMarkDone(id){
   const today = new Date().toISOString().split('T')[0];
   tasks[idx].lastDate = today;
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
-  try { await userDoc().update({ tasks }); } catch(e){}
+  try { await userDoc().set({ tasks },{merge:true}); } catch(e){}
   renderHome(); // re-renders inbox automatically — alert disappears
 }
 
@@ -993,7 +993,7 @@ async function deleteTx() {
     if (!confirm("Are you sure you want to delete this from the Cloud?")) return;
     const updatedTransactions = transactions.filter(t => t.id !== currentDetailId);
     try {
-        await userDoc().update({
+        await userDoc().set({
             transactions: updatedTransactions
         });
         transactions = updatedTransactions;
@@ -1326,7 +1326,7 @@ async function deleteStockItem(index) {
 
   // Sync to Cloud
   try {
-    await userDoc().update({
+    await userDoc().set({
       stock: stock
     });
     renderStock(); // Refresh screen
@@ -1486,7 +1486,7 @@ async function saveTask(){
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
 
   try {
-    await userDoc().update({ tasks: tasks });
+    await userDoc().set({ tasks: tasks },{merge:true});
   } catch(e){ console.log('Task cloud sync error', e); }
 
   closeTaskModal();
@@ -1500,7 +1500,7 @@ async function markDoneToday(id){
   const today = new Date().toISOString().split('T')[0];
   tasks[idx].lastDate = today;
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
-  try { await userDoc().update({ tasks: tasks }); } catch(e){}
+  try { await userDoc().set({ tasks: tasks },{merge:true}); } catch(e){}
   renderTask();
   renderHome(); // update inbox — alert disappears automatically
 }
@@ -1509,7 +1509,7 @@ async function deleteTask(id){
   if(!confirm('Delete this task?')) return;
   tasks = tasks.filter(t=>t.id!==id);
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
-  try { await userDoc().update({ tasks: tasks }); } catch(e){}
+  try { await userDoc().set({ tasks: tasks },{merge:true}); } catch(e){}
   renderTask();
   renderHome();
 }
@@ -1687,7 +1687,7 @@ async function saveIncome(){
   localStorage.setItem('incomeNames', JSON.stringify(incomeNames));
 
   try {
-    await userDoc().update({ incomes, incomeNames });
+    await userDoc().set({ incomes, incomeNames },{merge:true});
   } catch(e){ console.log('Income sync error',e); }
 
   closeIncomeModal();
@@ -1700,7 +1700,7 @@ async function deleteIncome(id){
   if(!confirm('Delete this income entry?')) return;
   incomes = incomes.filter(i=>String(i.id)!==String(id));
   localStorage.setItem('incomes_v1', JSON.stringify(incomes));
-  try { await userDoc().update({ incomes }); } catch(e){}
+  try { await userDoc().set({ incomes },{merge:true}); } catch(e){}
   renderIncome(); renderHome();
 }
 
@@ -1900,7 +1900,7 @@ async function inboxDone(id){
   if(idx<0) return;
   tasks[idx].lastDate = new Date().toISOString().split('T')[0];
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
-  try{ await userDoc().update({tasks}); }catch(e){}
+  try{ await userDoc().set({tasks},{merge:true}); }catch(e){}
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
   const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
   updateBellBadge(overdue+dueSoon);
@@ -2331,7 +2331,7 @@ async function saveDoc(){
   localStorage.setItem('docs_v1',  JSON.stringify(docs));
   localStorage.setItem('docNames', JSON.stringify(docNames));
 
-  try { await userDoc().update({ docs, docNames }); } catch(e){ console.log('Doc sync error',e); }
+  try { await userDoc().set({ docs, docNames },{merge:true}); } catch(e){ console.log('Doc sync error',e); }
 
   closeDocModal();
   renderDocs();
@@ -2342,7 +2342,7 @@ async function deleteDoc(id){
   if(!confirm('Delete this document?')) return;
   docs = docs.filter(d=>d.id!==id);
   localStorage.setItem('docs_v1', JSON.stringify(docs));
-  try { await userDoc().update({ docs }); } catch(e){}
+  try { await userDoc().set({ docs },{merge:true}); } catch(e){}
   renderDocs(); renderHome();
 }
 
@@ -2630,7 +2630,7 @@ async function saveVehicle(){
   else vehicles.push(entry);
 
   localStorage.setItem('vehicles_v1',JSON.stringify(vehicles));
-  try{ await userDoc().update({vehicles}); }catch(e){}
+  try{ await userDoc().set({vehicles},{merge:true}); }catch(e){}
   closeVehicleModal(); renderVehicles(); renderHome();
   alert('✅ Vehicle saved!');
 }
@@ -2639,7 +2639,7 @@ async function deleteVehicle(id){
   if(!confirm('Delete this vehicle?')) return;
   vehicles=vehicles.filter(v=>v.id!==id);
   localStorage.setItem('vehicles_v1',JSON.stringify(vehicles));
-  try{ await userDoc().update({vehicles}); }catch(e){}
+  try{ await userDoc().set({vehicles},{merge:true}); }catch(e){}
   closeVehicleDetail(); renderVehicles(); renderHome();
 }
 
@@ -2859,7 +2859,7 @@ async function saveMaint(){
   else maintRecords.push(entry);
 
   localStorage.setItem('maint_v1',JSON.stringify(maintRecords));
-  try{ await userDoc().update({maintRecords}); }catch(e){}
+  try{ await userDoc().set({maintRecords},{merge:true}); }catch(e){}
   closeMaintModal(); renderMaint(); renderHome();
   alert('✅ Record saved!');
 }
@@ -2868,7 +2868,7 @@ async function deleteMaint(id){
   if(!confirm('Delete this record?')) return;
   maintRecords=maintRecords.filter(r=>r.id!==id);
   localStorage.setItem('maint_v1',JSON.stringify(maintRecords));
-  try{ await userDoc().update({maintRecords}); }catch(e){}
+  try{ await userDoc().set({maintRecords},{merge:true}); }catch(e){}
   renderMaint(); renderHome();
 }
 
@@ -2921,7 +2921,7 @@ async function saveCurrentKms(){
   if(!kms){ alert('Enter current KMS reading'); return; }
   vehicleKms[vName]=kms;
   localStorage.setItem('vehicleKms',JSON.stringify(vehicleKms));
-  try{ await userDoc().update({vehicleKms}); }catch(e){}
+  try{ await userDoc().set({vehicleKms},{merge:true}); }catch(e){}
   closeKmsModal(); renderMaint(); renderHome();
   alert(`✅ KMS updated for ${vName}!`);
 }
@@ -3104,11 +3104,20 @@ async function signInWithGoogle(){
 async function signOutUser(){
   if(!confirm('Sign out of PS Expense Manager?')) return;
   try {
-    await auth.signOut();
-    // Clear local data on logout
+    // Reset ALL in-memory state first
+    transactions=[]; stock=[]; tasks=[]; incomes=[]; docs=[];
+    vehicles=[]; maintRecords=[]; vehicleKms={}; names=[];
+    incomeNames=[]; docNames=[]; units=["Kg","Ton","Bag","Piece","Litre","Meter","Box","Set","Day","Trip","Load"];
     currentUID = null;
-    ['txv2','stockv2','tasks_v1','incomes_v1','docs_v1','vehicles_v1','maint_v1','vehicleKms','names','items_db','incomeNames','docNames'].forEach(k=>localStorage.removeItem(k));
-    showLoginScreen();
+
+    // Clear localStorage
+    ['txv2','stockv2','tasks_v1','incomes_v1','docs_v1','vehicles_v1',
+     'maint_v1','vehicleKms','names','items_db','incomeNames','docNames',
+     'lastBackup','lastNotifCheck'].forEach(k=>localStorage.removeItem(k));
+
+    // Sign out from Firebase Auth
+    await auth.signOut();
+    // onAuthStateChanged will call showLoginScreen()
     showToast('Signed out successfully', 'green');
   } catch(e){
     showToast('Sign out failed: '+e.message, 'red');
@@ -3143,6 +3152,10 @@ function updateUserMenuInfo(user){
 auth.onAuthStateChanged(async (user) => {
   if(user){
     currentUID = user.uid;
+    // ✅ Reset ALL in-memory state before loading — prevents stale data from previous session
+    transactions=[]; stock=[]; tasks=[]; incomes=[]; docs=[]; vehicles=[];
+    maintRecords=[]; vehicleKms={}; names=[]; incomeNames=[]; docNames=[];
+    units=JSON.parse(localStorage.getItem('units')||'["Kg","Ton","Bag","Piece","Litre","Meter","Box","Set","Day","Trip","Load"]');
     showAppScreen();
     updateUserMenuInfo(user);
     await loadFromCloud();
@@ -3152,28 +3165,103 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 // ═══════════════ LOAD FROM CLOUD ═══════════════
-// Firebase is source of truth — load on every startup
 async function loadFromCloud(){
-  // Attach income modal listener here — HTML exists by now
+  // Attach income modal listener (HTML exists by now)
   const incMod = document.getElementById('incomeModal');
-  if(incMod) incMod.addEventListener('click',function(e){if(e.target===this)closeIncomeModal();});
+  if(incMod && !incMod._listenerAdded){
+    incMod.addEventListener('click',function(e){if(e.target===this)closeIncomeModal();});
+    incMod._listenerAdded = true;
+  }
+
+  // Guard — must have UID
+  if(!currentUID){
+    console.log('loadFromCloud called without UID — skipping');
+    return;
+  }
+
+  // Show loading on home screen
+  const homeList = document.getElementById('homeList') || document.getElementById('screen-home');
+  showToast('⏳ Loading your data...', 'orange');
+
   try {
-    const doc = await userDoc().get();
-    if(doc.exists){
-      const data = doc.data();
-      if(data.transactions){ transactions=data.transactions; localStorage.setItem('txv2',JSON.stringify(transactions)); }
-      if(data.stock)       { stock=data.stock;               localStorage.setItem('stockv2',JSON.stringify(stock)); }
-      if(data.tasks)       { tasks=data.tasks;               localStorage.setItem('tasks_v1',JSON.stringify(tasks)); }
-      if(data.incomes)     { incomes=data.incomes;           localStorage.setItem('incomes_v1',JSON.stringify(incomes)); }
-      if(data.incomeNames) { incomeNames=data.incomeNames;   localStorage.setItem('incomeNames',JSON.stringify(incomeNames)); }
-      if(data.docs)        { docs=data.docs;                 localStorage.setItem('docs_v1',JSON.stringify(docs)); }
-      if(data.docNames)    { docNames=data.docNames;         localStorage.setItem('docNames',JSON.stringify(docNames)); }
-      if(data.vehicles)    { vehicles=data.vehicles;         localStorage.setItem('vehicles_v1',JSON.stringify(vehicles)); }
-      if(data.maintRecords){ maintRecords=data.maintRecords; localStorage.setItem('maint_v1',JSON.stringify(maintRecords)); }
-      if(data.vehicleKms)  { vehicleKms=data.vehicleKms;     localStorage.setItem('vehicleKms',JSON.stringify(vehicleKms)); }
+    const snap = await userDoc().get();
+
+    if(snap && snap.exists){
+      const data = snap.data();
+      if(data.transactions) transactions = data.transactions;
+      if(data.stock)        stock        = data.stock;
+      if(data.tasks)        tasks        = data.tasks;
+      if(data.incomes)      incomes      = data.incomes;
+      if(data.incomeNames)  incomeNames  = data.incomeNames;
+      if(data.docs)         docs         = data.docs;
+      if(data.docNames)     docNames     = data.docNames;
+      if(data.vehicles)     vehicles     = data.vehicles;
+      if(data.maintRecords) maintRecords = data.maintRecords;
+      if(data.vehicleKms)   vehicleKms   = data.vehicleKms;
+      console.log('✅ Data loaded for UID:', currentUID,
+        '| Tx:', transactions.length,
+        '| Income:', incomes.length,
+        '| Tasks:', tasks.length);
+      showToast('✅ Data loaded!', 'green');
+    } else {
+      // No data at new path — check old path for migration
+      console.log('No data at new path — checking old path...');
+      try {
+        const oldSnap = await db.collection("userdata").doc("ps_enterprise_data").get();
+        if(oldSnap && oldSnap.exists){
+          const oldData = oldSnap.data();
+          if(oldData.transactions) transactions = oldData.transactions;
+          if(oldData.stock)        stock        = oldData.stock;
+          if(oldData.tasks)        tasks        = oldData.tasks;
+          if(oldData.incomes)      incomes      = oldData.incomes;
+          if(oldData.incomeNames)  incomeNames  = oldData.incomeNames;
+          if(oldData.docs)         docs         = oldData.docs;
+          if(oldData.docNames)     docNames     = oldData.docNames;
+          if(oldData.vehicles)     vehicles     = oldData.vehicles;
+          if(oldData.maintRecords) maintRecords = oldData.maintRecords;
+          if(oldData.vehicleKms)   vehicleKms   = oldData.vehicleKms;
+          // Save migrated data to new user path
+          await userDoc().set({
+            transactions, stock, tasks, incomes, incomeNames,
+            docs, docNames, vehicles, maintRecords, vehicleKms,
+            migratedAt: new Date().toISOString()
+          }, {merge:true});
+          console.log('✅ Old data migrated!');
+          showToast('✅ Existing data restored!', 'green');
+        } else {
+          // Brand new user
+          await userDoc().set({ createdAt: new Date().toISOString() }, {merge:true});
+          showToast('👋 Welcome! Fresh start.', 'green');
+          console.log('🆕 New user');
+        }
+      } catch(migErr){
+        console.log('Migration error:', migErr.message);
+        showToast('⚠️ Could not load old data.', 'orange');
+      }
     }
-  } catch(e){ console.log("Offline — using local data"); }
-  // Update bell badge on load
+  } catch(e){
+    console.log('Cloud load error:', e.message);
+    // Fallback to localStorage
+    const cached = localStorage.getItem('txv2');
+    if(cached) transactions = JSON.parse(cached);
+    const cachedIncome = localStorage.getItem('incomes_v1');
+    if(cachedIncome) incomes = JSON.parse(cachedIncome);
+    showToast('⚠️ Offline — showing cached data', 'orange');
+  }
+
+  // Always save to localStorage as cache
+  localStorage.setItem('txv2',        JSON.stringify(transactions));
+  localStorage.setItem('stockv2',     JSON.stringify(stock));
+  localStorage.setItem('tasks_v1',    JSON.stringify(tasks));
+  localStorage.setItem('incomes_v1',  JSON.stringify(incomes));
+  localStorage.setItem('incomeNames', JSON.stringify(incomeNames));
+  localStorage.setItem('docs_v1',     JSON.stringify(docs));
+  localStorage.setItem('docNames',    JSON.stringify(docNames));
+  localStorage.setItem('vehicles_v1', JSON.stringify(vehicles));
+  localStorage.setItem('maint_v1',    JSON.stringify(maintRecords));
+  localStorage.setItem('vehicleKms',  JSON.stringify(vehicleKms));
+
+  // Render UI
   const ov = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
   const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
   updateBellBadge(ov+ds);
