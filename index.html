@@ -68,6 +68,20 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 /* Hide old inline inbox */
 .inbox-wrap{display:none;}
 
+/* QUICK SELECT DROPDOWN */
+.qs-wrap{position:relative;}
+.qs-input{width:100%;}
+.qs-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:0 0 10px 10px;border-top:none;z-index:400;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.12);display:none;}
+.qs-dropdown.open{display:block;}
+.qs-option{padding:10px 14px;font-size:0.85rem;cursor:pointer;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px;transition:background 0.1s;}
+.qs-option:last-child{border-bottom:none;}
+.qs-option:hover,.qs-option:active{background:var(--accent-light);}
+.qs-option-icon{width:26px;height:26px;border-radius:6px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:var(--accent);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;}
+.qs-option-text{flex:1;}
+.qs-option-label{font-weight:600;color:var(--text);}
+.qs-option-sub{font-size:0.7rem;color:var(--muted);}
+.qs-empty{padding:12px 14px;font-size:0.8rem;color:var(--muted);text-align:center;font-style:italic;}
+
 /* TOP BAR */
 .topbar{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-back{background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;flex-shrink:0;}
@@ -504,10 +518,11 @@ tr:hover td{background:var(--surface2);}
 <div class="screen" id="screen-add">
   <div class="topbar">
     <button class="topbar-back" onclick="closeAdd()">‹</button>
-    <span class="topbar-title">New Transaction</span>
+    <span class="topbar-title" id="addFormTitle">New Transaction</span>
   </div>
   <div class="add-wrap">
     <div class="card">
+      <input type="hidden" id="txEditId" value=""/>
       <div class="form-row c2" style="margin-bottom:10px;">
         <div>
           <label>Transaction ID</label>
@@ -520,8 +535,13 @@ tr:hover td{background:var(--surface2);}
       </div>
       <div style="margin-bottom:10px;">
         <label>Name (Party / Person)</label>
-        <input type="text" id="txName" list="namesList" placeholder="Type or select..." autocomplete="off"/>
-        <datalist id="namesList"></datalist>
+        <div class="qs-wrap">
+          <input type="text" id="txName" class="qs-input" placeholder="Type or select name..." autocomplete="off"
+            oninput="filterQS('txName','txNameDrop',names)"
+            onfocus="showQS('txName','txNameDrop',names)"
+            onblur="hideQS('txNameDrop')"/>
+          <div class="qs-dropdown" id="txNameDrop"></div>
+        </div>
       </div>
       <label>Category</label>
       <div class="cat-grid">
@@ -675,6 +695,7 @@ tr:hover td{background:var(--surface2);}
       </div>
       <div id="detailNote" style="font-size:0.8rem;color:var(--muted);font-style:italic;"></div>
       <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="editTx()">✏️ Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteTx()">🗑 Delete</button>
         <button class="btn btn-ghost btn-sm" onclick="closeDetail()">Close</button>
       </div>
@@ -752,6 +773,8 @@ async function save() {
       vehicles: vehicles,
       maintRecords: maintRecords,
       vehicleKms: vehicleKms,
+      items: items,
+      names: names,
       lastUpdated: new Date().toISOString()
     }, {merge:true});
   } catch(e) { console.error("Cloud Sync Error", e); }
@@ -767,7 +790,11 @@ function goHome(){showScreen('home');renderHome();}
 function openExpense(){showScreen('expense');renderExpense();}
 function openStock(){showScreen('stock');renderStock();}
 function openAdd(){showScreen('add');initForm();}
-function closeAdd(){showScreen('expense');renderExpense();}
+function closeAdd(){
+  document.getElementById('txEditId').value='';
+  document.getElementById('addFormTitle').textContent='New Transaction';
+  showScreen('expense');renderExpense();
+}
 function openIncome(){showScreen('income');renderIncome();}
 function openDocs(){showScreen('docs');renderDocs();}
 function openVehicles(){showScreen('vehicle');renderVehicles();}
@@ -1083,7 +1110,53 @@ function saveStockPDF(){
 }
 
 // ═══════════════ ADD FORM ═══════════════
+function editTx(){
+  const tx = transactions.find(t=>t.id===currentDetailId);
+  if(!tx) return;
+  closeDetail();
+
+  // Set edit mode
+  document.getElementById('txEditId').value = tx.id;
+  document.getElementById('addFormTitle').textContent = 'Edit Transaction';
+  document.getElementById('txId').value  = '#'+pad(tx.id);
+  document.getElementById('txDate').value = tx.date||'';
+  document.getElementById('txName').value = tx.name||'';
+  document.getElementById('txNote').value = tx.note||'';
+
+  // Attachment
+  document.getElementById('txAttachUrl').value  = tx.attachUrl||'';
+  document.getElementById('txAttachType').value = tx.attachType||'';
+  if(tx.attachUrl){
+    document.getElementById('txUploadPrompt').style.display='none';
+    document.getElementById('txFilePreview').style.display='block';
+    const isPDF = tx.attachType==='pdf';
+    document.getElementById('txPreviewContent').innerHTML = isPDF
+      ? `<div style="font-size:2rem;">📄</div><div style="font-size:0.82rem;font-weight:600;">PDF attached</div>`
+      : `<img src="${tx.attachUrl}" style="max-height:80px;max-width:100%;border-radius:8px;object-fit:contain;"/>`;
+  } else {
+    resetUpload('tx');
+  }
+
+  // Category
+  currentCat = tx.category;
+  document.querySelectorAll('.cat-opt').forEach(o=>o.className='cat-opt');
+  const catEl = document.querySelector(`.cat-opt[onclick*="'${tx.category}'"]`);
+  if(catEl) catEl.classList.add('selected', tx.category);
+
+  // Load item rows
+  currentRows = tx.items.map(it=>({...it}));
+  buildHeader();
+  document.getElementById('itemsSection').style.display='block';
+  renderRows();
+
+  showScreen('add');
+}
+
 function initForm(){
+  // Clear edit mode
+  document.getElementById('txEditId').value='';
+  document.getElementById('addFormTitle').textContent='New Transaction';
+
   const nextId = transactions.length>0 ? Math.max(...transactions.map(t=>t.id))+1 : 1;
   document.getElementById('txId').value='#'+pad(nextId);
   if(!document.getElementById('txDate').value) document.getElementById('txDate').valueAsDate=new Date();
@@ -1126,7 +1199,13 @@ function renderRows(){
     if(currentCat==='Product'){
       div.className='item-row pr';
       div.innerHTML=`
-        <div><input type="text" list="il${idx}" placeholder="Item" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div class="qs-wrap">
+          <input type="text" class="qs-input" list="il${idx}" placeholder="Item" value="${row.item}"
+            oninput="upd(${idx},'item',this.value);filterQS(null,null,items,this,'iDrop${idx}')"
+            onfocus="showQSFor(this,'iDrop${idx}',items)"
+            onblur="hideQS('iDrop${idx}')"/>
+          <div class="qs-dropdown" id="iDrop${idx}"></div>
+        </div>
         <div><button type="button" class="unit-pick-btn" onclick="openUnit(${idx})">${row.unit||'Unit ▾'}</button></div>
         <div><input type="number" min="0" step="0.01" placeholder="0" value="${row.qty||''}" oninput="upd(${idx},'qty',+this.value)"/></div>
         <div><input type="number" min="0" step="0.01" placeholder="0" value="${row.price||''}" oninput="upd(${idx},'price',+this.value)"/></div>
@@ -1135,7 +1214,13 @@ function renderRows(){
     } else if(currentCat==='Labour'){
       div.className='item-row la';
       div.innerHTML=`
-        <div><input type="text" list="il${idx}" placeholder="Work" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div class="qs-wrap">
+          <input type="text" class="qs-input" placeholder="Work" value="${row.item}"
+            oninput="upd(${idx},'item',this.value);filterQS(null,null,items,this,'iDrop${idx}')"
+            onfocus="showQSFor(this,'iDrop${idx}',items)"
+            onblur="hideQS('iDrop${idx}')"/>
+          <div class="qs-dropdown" id="iDrop${idx}"></div>
+        </div>
         <div><button type="button" class="unit-pick-btn" onclick="openUnit(${idx})">${row.unit||'Unit ▾'}</button></div>
         <div><input type="number" min="0" step="0.5" placeholder="Days" value="${row.days||''}" oninput="upd(${idx},'days',+this.value)"/></div>
         <div><input type="number" min="0" step="1" placeholder="Persons" value="${row.persons||''}" oninput="upd(${idx},'persons',+this.value)"/></div>
@@ -1145,7 +1230,13 @@ function renderRows(){
     } else {
       div.className='item-row tr';
       div.innerHTML=`
-        <div><input type="text" list="il${idx}" placeholder="Description" value="${row.item}" oninput="upd(${idx},'item',this.value)"/><datalist id="il${idx}">${itOpts}</datalist></div>
+        <div class="qs-wrap">
+          <input type="text" class="qs-input" placeholder="Description" value="${row.item}"
+            oninput="upd(${idx},'item',this.value);filterQS(null,null,items,this,'iDrop${idx}')"
+            onfocus="showQSFor(this,'iDrop${idx}',items)"
+            onblur="hideQS('iDrop${idx}')"/>
+          <div class="qs-dropdown" id="iDrop${idx}"></div>
+        </div>
         <div><input type="number" min="0" step="0.01" placeholder="Qty" value="${row.qty||''}" oninput="upd(${idx},'qty',+this.value)"/></div>
         <div><input type="number" min="0" step="0.01" placeholder="Price" value="${row.price||''}" oninput="upd(${idx},'price',+this.value)"/></div>
         <div class="row-total" id="rt${idx}">${fmt(row.total)}</div>
@@ -1175,6 +1266,92 @@ function calcGrand(){
   const t=currentRows.reduce((s,r)=>s+(r.total||0),0);
   document.getElementById('grandTotalDisp').textContent=fmt(t);
 }
+
+// ═══════════════ QUICK SELECT DROPDOWN ═══════════════
+let _qsTimer = null;
+
+function buildQSOptions(list, query, dropId, onSelect){
+  const drop = document.getElementById(dropId);
+  if(!drop) return;
+  const q = (query||'').toLowerCase().trim();
+  // Filter: show all if empty, or filter by query
+  const filtered = q
+    ? list.filter(v => v.toLowerCase().includes(q)).slice(0, 20)
+    : list.slice(0, 20);
+
+  if(!filtered.length){
+    drop.innerHTML = `<div class="qs-empty">No matches — type to add new</div>`;
+  } else {
+    drop.innerHTML = filtered.map(v => {
+      const initials = v.substring(0,2).toUpperCase();
+      const highlight = q ? v.replace(new RegExp(`(${q})`, 'gi'), '<b>$1</b>') : v;
+      return `<div class="qs-option" onmousedown="event.preventDefault()" onclick="${onSelect}">
+        <div class="qs-option-icon">${initials}</div>
+        <div class="qs-option-text"><div class="qs-option-label">${highlight}</div></div>
+      </div>`;
+    }).join('');
+  }
+  drop.classList.add('open');
+}
+
+// For named input fields (name field)
+function showQS(inputId, dropId, list){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  buildQSOptions(list, input.value, dropId,
+    `selectQS('${inputId}','${dropId}',this.querySelector('.qs-option-label').textContent)`);
+}
+
+function filterQS(inputId, dropId, list, inputEl, dropIdDirect){
+  // Can be called with either inputId or direct element reference
+  const input = inputEl || document.getElementById(inputId);
+  const dId   = dropIdDirect || dropId;
+  if(!input) return;
+  buildQSOptions(list, input.value, dId,
+    `selectQSEl('${dId}',this.querySelector('.qs-option-label').textContent)`);
+}
+
+// For item row inputs (no fixed ID — uses element reference)
+function showQSFor(inputEl, dropId, list){
+  buildQSOptions(list, inputEl.value, dropId,
+    `selectQSEl('${dropId}',this.querySelector('.qs-option-label').textContent)`);
+}
+
+function selectQS(inputId, dropId, value){
+  const input = document.getElementById(inputId);
+  if(input){ input.value = value; input.dispatchEvent(new Event('input')); }
+  hideQS(dropId);
+}
+
+function selectQSEl(dropId, value){
+  // Find the sibling input of this dropdown
+  const drop  = document.getElementById(dropId);
+  if(!drop) return;
+  const input = drop.previousElementSibling;
+  if(input && (input.tagName==='INPUT')){
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    // For item rows — trigger upd
+    const onInput = input.getAttribute('oninput');
+    if(onInput) eval(onInput);
+  }
+  hideQS(dropId);
+}
+
+function hideQS(dropId){
+  clearTimeout(_qsTimer);
+  _qsTimer = setTimeout(()=>{
+    const drop = document.getElementById(dropId);
+    if(drop) drop.classList.remove('open');
+  }, 200);
+}
+
+// Close all dropdowns when clicking outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.qs-wrap')){
+    document.querySelectorAll('.qs-dropdown.open').forEach(d=>d.classList.remove('open'));
+  }
+});
 
 // ═══════════════ UNIT MODAL ═══════════════
 function openUnit(idx){
@@ -1208,9 +1385,10 @@ function closeUnitModal(){document.getElementById('unitOv').classList.remove('op
 
 // ═══════════════ SAVE TRANSACTION ═══════════════
 function saveTransaction(){
-  const name=document.getElementById('txName').value.trim();
-  const date=document.getElementById('txDate').value;
-  const note=document.getElementById('txNote').value.trim();
+  const editId   = document.getElementById('txEditId').value;
+  const name     = document.getElementById('txName').value.trim();
+  const date     = document.getElementById('txDate').value;
+  const note     = document.getElementById('txNote').value.trim();
   const attachUrl  = document.getElementById('txAttachUrl').value;
   const attachType = document.getElementById('txAttachType').value;
   if(!name){alert('Enter Name');return;}
@@ -1219,33 +1397,90 @@ function saveTransaction(){
   if(!currentRows.length){alert('Add at least one item');return;}
   for(let r of currentRows){if(!r.item){alert('Fill all item names');return;}}
 
-  const nextId=transactions.length>0?Math.max(...transactions.map(t=>t.id))+1:1;
   const grandTotal=currentRows.reduce((s,r)=>s+(r.total||0),0);
-  const tx={id:nextId,name,date,note,category:currentCat,items:currentRows.map(r=>({...r})),grandTotal,createdAt:Date.now(),attachUrl:attachUrl||'',attachType:attachType||''};
-  transactions.push(tx);
 
-  if(!names.includes(name)) names.push(name);
-  currentRows.forEach(r=>{if(r.item&&!items.includes(r.item)) items.push(r.item);});
+  if(editId){
+    // ── EDIT MODE ──
+    const idx = transactions.findIndex(t=>String(t.id)===String(editId));
+    if(idx === -1){ alert('Transaction not found'); return; }
 
-  // Stock
-  if(currentCat==='Product'){
-    currentRows.forEach(r=>{
-      if(!r.item) return;
-      const key=r.item+'|'+(r.unit||'');
-      let s=stock.find(s=>s.key===key);
-      if(!s){s={key,name:r.item,unit:r.unit||'',qty:0,usageLog:[]};stock.push(s);}
-      s.qty+=(r.qty||0);
-      s.usageLog.push({type:'in',qty:r.qty||0,date,note:'Tx #'+pad(nextId)});
-    });
+    const oldTx = transactions[idx];
+
+    // Reverse old stock if category was Product
+    if(oldTx.category==='Product'){
+      oldTx.items.forEach(r=>{
+        if(!r.item) return;
+        const key=r.item+'|'+(r.unit||'');
+        const s=stock.find(s=>s.key===key);
+        if(s) s.qty -= (r.qty||0);
+      });
+    }
+
+    // Update transaction
+    transactions[idx]={
+      ...oldTx,
+      name, date, note, category:currentCat,
+      items:currentRows.map(r=>({...r})),
+      grandTotal,
+      attachUrl:attachUrl||'',
+      attachType:attachType||'',
+      updatedAt:Date.now()
+    };
+
+    // Re-apply stock if Product
+    if(currentCat==='Product'){
+      currentRows.forEach(r=>{
+        if(!r.item) return;
+        const key=r.item+'|'+(r.unit||'');
+        let s=stock.find(s=>s.key===key);
+        if(!s){s={key,name:r.item,unit:r.unit||'',qty:0,usageLog:[]};stock.push(s);}
+        s.qty+=(r.qty||0);
+        s.usageLog.push({type:'in',qty:r.qty||0,date,note:'Edited Tx #'+pad(oldTx.id)});
+      });
+    }
+
+    if(!names.includes(name)) names.push(name);
+    currentRows.forEach(r=>{if(r.item&&!items.includes(r.item)) items.push(r.item);});
+    save();
+
+    // Reset UI
+    document.getElementById('txEditId').value='';
+    document.getElementById('addFormTitle').textContent='New Transaction';
+    document.getElementById('txName').value='';
+    document.getElementById('txNote').value='';
+    resetUpload('tx');
+    showScreen('expense'); renderExpense(); renderHome();
+    showToast('✅ Transaction #'+pad(oldTx.id)+' updated!', 'green');
+
+  } else {
+    // ── ADD MODE ──
+    const nextId=transactions.length>0?Math.max(...transactions.map(t=>t.id))+1:1;
+    const tx={id:nextId,name,date,note,category:currentCat,items:currentRows.map(r=>({...r})),grandTotal,createdAt:Date.now(),attachUrl:attachUrl||'',attachType:attachType||''};
+    transactions.push(tx);
+
+    if(!names.includes(name)) names.push(name);
+    currentRows.forEach(r=>{if(r.item&&!items.includes(r.item)) items.push(r.item);});
+
+    // Stock
+    if(currentCat==='Product'){
+      currentRows.forEach(r=>{
+        if(!r.item) return;
+        const key=r.item+'|'+(r.unit||'');
+        let s=stock.find(s=>s.key===key);
+        if(!s){s={key,name:r.item,unit:r.unit||'',qty:0,usageLog:[]};stock.push(s);}
+        s.qty+=(r.qty||0);
+        s.usageLog.push({type:'in',qty:r.qty||0,date,note:'Tx #'+pad(nextId)});
+      });
+    }
+    save();
+
+    // Reset UI
+    document.getElementById('txName').value='';
+    document.getElementById('txNote').value='';
+    resetUpload('tx');
+    showScreen('expense'); renderExpense(); renderHome();
+    alert('✅ Transaction #'+pad(nextId)+' saved!');
   }
-  save();
-
-  // Reset UI
-  document.getElementById('txName').value='';
-  document.getElementById('txNote').value='';
-  resetUpload('tx');
-  showScreen('expense'); renderExpense(); renderHome();
-  alert('✅ Transaction #'+pad(nextId)+' saved!');
 }
 
 function resetForm(){
@@ -3019,7 +3254,7 @@ async function importBackup(input){
       if(data.names)        { names        = data.names;        localStorage.setItem('names', JSON.stringify(names)); }
       if(data.incomeNames)  { incomeNames  = data.incomeNames;  localStorage.setItem('incomeNames', JSON.stringify(incomeNames)); }
       if(data.docNames)     { docNames     = data.docNames;     localStorage.setItem('docNames', JSON.stringify(docNames)); }
-      if(data.items)        { localStorage.setItem('items_db', JSON.stringify(data.items)); }
+      if(data.items)        { items = data.items; localStorage.setItem('items_db', JSON.stringify(items)); }
 
       // Sync restored data to Firebase
       try {
@@ -3114,6 +3349,9 @@ async function signOutUser(){
     ['txv2','stockv2','tasks_v1','incomes_v1','docs_v1','vehicles_v1',
      'maint_v1','vehicleKms','names','items_db','incomeNames','docNames',
      'lastBackup','lastNotifCheck'].forEach(k=>localStorage.removeItem(k));
+
+    // Also reset in-memory names and items
+    names=[]; items=[];
 
     // Sign out from Firebase Auth
     await auth.signOut();
@@ -3249,6 +3487,19 @@ async function loadFromCloud(){
     showToast('⚠️ Offline — showing cached data', 'orange');
   }
 
+  // Rebuild names & items from existing data if arrays are empty
+  if(!names.length && transactions.length){
+    transactions.forEach(tx=>{ if(tx.name && !names.includes(tx.name)) names.push(tx.name); });
+  }
+  if(!names.length && incomes.length){
+    incomes.forEach(inc=>{ if(inc.name && !names.includes(inc.name)) names.push(inc.name); });
+  }
+  if(!items.length && transactions.length){
+    transactions.forEach(tx=>{
+      (tx.items||[]).forEach(it=>{ if(it.item && !items.includes(it.item)) items.push(it.item); });
+    });
+  }
+
   // Always save to localStorage as cache
   localStorage.setItem('txv2',        JSON.stringify(transactions));
   localStorage.setItem('stockv2',     JSON.stringify(stock));
@@ -3260,6 +3511,8 @@ async function loadFromCloud(){
   localStorage.setItem('vehicles_v1', JSON.stringify(vehicles));
   localStorage.setItem('maint_v1',    JSON.stringify(maintRecords));
   localStorage.setItem('vehicleKms',  JSON.stringify(vehicleKms));
+  localStorage.setItem('names',       JSON.stringify(names));
+  localStorage.setItem('items_db',    JSON.stringify(items));
 
   // Render UI
   const ov = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
