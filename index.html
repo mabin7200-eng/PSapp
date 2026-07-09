@@ -825,7 +825,7 @@ function renderHome(){
 
   // Task summary
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
-  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=getThreshold('task');}).length;
   document.getElementById('homeTaskCount').textContent = tasks.length;
   document.getElementById('homeTaskSub').textContent = tasks.length+' task'+(tasks.length!==1?'s':'');
   document.getElementById('homeTaskDue').textContent = overdue>0 ? overdue+' overdue ⚠️' : dueSoon>0 ? dueSoon+' due soon' : 'all on track ✅';
@@ -837,7 +837,7 @@ function renderHome(){
   if(hdc2) hdc2.textContent = docs.length;
   if(hde2) hde2.textContent = docExpiring>0 ? docExpiring+' expiring soon ⚠️' : 'all valid';
 
-  const vehicleExpiring = vehicles.filter(v=>{ const d=vehicleWorstDays(v); return d!==null&&d<=30; }).length;
+  const vehicleExpiring = vehicles.filter(v=>{ const d=vehicleWorstDays(v); return d!==null&&d<=getThreshold('fc'); }).length;
   const hvc2=document.getElementById('homeVehicleCount');
   const hve2=document.getElementById('homeVehicleExpiry');
   if(hvc2) hvc2.textContent=vehicles.length;
@@ -849,7 +849,7 @@ function renderHome(){
     if(!latest) return false;
     const curKms=vehicleKms[vName];
     if(curKms==null) return false;
-    return (latest.nextKms - curKms) < 500;
+    return (latest.nextKms - curKms) < getThreshold('kms');
   }).length;
   const hmc2=document.getElementById('homeMaintCount');
   const hma2=document.getElementById('homeMaintAlert');
@@ -1604,7 +1604,7 @@ function renderTask(){
 
   // Safe home card update — elements may not be visible
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
-  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=getThreshold('task');}).length;
   const htc = document.getElementById('homeTaskCount');
   const hts = document.getElementById('homeTaskSub');
   const htd = document.getElementById('homeTaskDue');
@@ -2142,7 +2142,7 @@ async function inboxDone(id){
   localStorage.setItem('tasks_v1', JSON.stringify(tasks));
   try{ await userDoc().set({tasks},{merge:true}); }catch(e){}
   const overdue = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
-  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  const dueSoon = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=getThreshold('task');}).length;
   updateBellBadge(overdue+dueSoon);
   renderInboxScreen();
   renderHome();
@@ -2712,14 +2712,14 @@ function renderVehicles(){
 
   // Bell badge update
   let totalAlert=0;
-  vehicles.forEach(v=>{ const d=vehicleWorstDays(v); if(d!==null&&d<=30) totalAlert++; });
+  vehicles.forEach(v=>{ const d=vehicleWorstDays(v); if(d!==null&&d<=getThreshold('fc')) totalAlert++; });
   const hvc = document.getElementById('homeVehicleCount');
   const hve = document.getElementById('homeVehicleExpiry');
   if(hvc) hvc.textContent=vehicles.length;
   if(hve) hve.textContent=totalAlert>0?totalAlert+' expiring soon ⚠️':'all valid';
 
   // Alert strip
-  const alertVehicles = vehicles.filter(v=>{ const d=vehicleWorstDays(v); return d!==null&&d<=30; });
+  const alertVehicles = vehicles.filter(v=>{ const d=vehicleWorstDays(v); return d!==null&&d<=getThreshold('fc'); });
   if(strip){
     if(alertVehicles.length){
       strip.style.display='block';
@@ -2938,7 +2938,7 @@ function renderMaint(){
     const curKms = vehicleKms[vName];
     if(curKms === undefined || curKms === null) return;
     const rem = latest.nextKms - curKms;
-    if(rem < 500) kmsAlerts.push({vName, rem, nextKms:latest.nextKms, curKms});
+    if(rem < getThreshold('kms')) kmsAlerts.push({vName, rem, nextKms:latest.nextKms, curKms});
   });
 
   // Alert strip
@@ -2977,7 +2977,7 @@ function renderMaint(){
     const latest = [...recs].sort((a,b)=>b.createdAt-a.createdAt)[0];
     const curKms = vehicleKms[vName];
     const rem    = (latest?.nextKms && curKms!=null) ? latest.nextKms - curKms : null;
-    const kmsColor = rem===null?'#6b7280':rem<=0?'#c81e1e':rem<500?'#c81e1e':rem<1000?'#d03801':'#057a55';
+    const kmsColor = rem===null?'#6b7280':rem<=0?'#c81e1e':rem<getThreshold('kms')?'#c81e1e':rem<getThreshold('kms')*2?'#d03801':'#057a55';
 
     return `
     <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:16px;border:1px solid #e2e5eb;overflow:hidden;">
@@ -3151,7 +3151,7 @@ function previewKmsRemaining(){
   const el=document.getElementById('kmsPreviewRemaining');
   if(!newKms||!latest?.nextKms){ el.textContent=''; return; }
   const rem=latest.nextKms-newKms;
-  el.textContent=rem<=0?'⚠️ Service OVERDUE!':`Remaining after update: ${rem.toLocaleString()} KMS ${rem<500?'⚠️ Very close!':''}`;
+  el.textContent=rem<=0?'⚠️ Service OVERDUE!':`Remaining after update: ${rem.toLocaleString()} KMS ${rem<getThreshold('kms')?'⚠️ Very close!':''}`;
   el.style.color=rem<=0?'#c81e1e':rem<500?'#c81e1e':'#057a55';
 }
 
@@ -3255,6 +3255,8 @@ async function importBackup(input){
       if(data.vehicles)     { vehicles     = data.vehicles;     localStorage.setItem('vehicles_v1', JSON.stringify(vehicles)); }
       if(data.maintRecords) { maintRecords = data.maintRecords; localStorage.setItem('maint_v1', JSON.stringify(maintRecords)); }
       if(data.vehicleKms)   { vehicleKms   = data.vehicleKms;   localStorage.setItem('vehicleKms', JSON.stringify(vehicleKms)); }
+      if(data.reminderSettings){ reminderSettings = data.reminderSettings; localStorage.setItem('reminderSettings', JSON.stringify(reminderSettings)); }
+      if(data.reminderSettings){ reminderSettings = data.reminderSettings; localStorage.setItem('reminderSettings', JSON.stringify(reminderSettings)); }
       if(data.units)        { units        = data.units;        localStorage.setItem('units', JSON.stringify(units)); }
       if(data.names)        { names        = data.names;        localStorage.setItem('names', JSON.stringify(names)); }
       if(data.incomeNames)  { incomeNames  = data.incomeNames;  localStorage.setItem('incomeNames', JSON.stringify(incomeNames)); }
@@ -3407,6 +3409,65 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
+// ═══════════════ REMINDER SETTINGS ═══════════════
+// Default days-before values
+const RS_DEFAULTS = {
+  fc:       30,
+  ins:      60,
+  tax:      30,
+  pucc:     15,
+  passport: 90,
+  health:   60,
+  task:     10,
+  kms:      500,
+};
+
+let reminderSettings = JSON.parse(localStorage.getItem('reminderSettings') || 'null') || {...RS_DEFAULTS};
+
+function openReminderSettings(){
+  // Load current settings into form
+  Object.keys(RS_DEFAULTS).forEach(function(key){
+    var el = document.getElementById('rs_' + key);
+    if(el) el.value = reminderSettings[key] || RS_DEFAULTS[key];
+  });
+  document.getElementById('reminderSettingsModal').style.display = 'flex';
+}
+
+function closeReminderSettings(){
+  document.getElementById('reminderSettingsModal').style.display = 'none';
+}
+
+async function saveReminderSettings(){
+  // Read all values
+  Object.keys(RS_DEFAULTS).forEach(function(key){
+    var el = document.getElementById('rs_' + key);
+    if(el && el.value){
+      reminderSettings[key] = parseInt(el.value) || RS_DEFAULTS[key];
+    }
+  });
+
+  // Save locally
+  localStorage.setItem('reminderSettings', JSON.stringify(reminderSettings));
+
+  // Save to Firebase so Telegram also uses these settings
+  try {
+    await userDoc().set({ reminderSettings: reminderSettings }, { merge: true });
+    showToast('✅ Reminder settings saved!', 'green');
+  } catch(e){
+    showToast('✅ Saved locally. Firebase sync failed.', 'orange');
+  }
+
+  closeReminderSettings();
+
+  // Re-render inbox with new thresholds
+  renderHome();
+}
+
+// Use reminderSettings in inbox and alert calculations
+function getThreshold(key){
+  return reminderSettings[key] || RS_DEFAULTS[key];
+}
+
 // ═══════════════ LOAD FROM CLOUD ═══════════════
 async function loadFromCloud(){
   // Attach income modal listener (HTML exists by now)
@@ -3521,7 +3582,7 @@ async function loadFromCloud(){
 
   // Render UI
   const ov = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d<0;}).length;
-  const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=10;}).length;
+  const ds = tasks.filter(t=>{ const d=taskDaysLeft(t.lastDate,t.freq); return d!==null&&d>=0&&d<=getThreshold('task');}).length;
   updateBellBadge(ov+ds);
   updateCloudinaryStatus();
   updateLastBackupLabel();
@@ -4241,6 +4302,14 @@ async function loadFromCloud(){
         </div>
         <span style="font-size:0.75rem;color:#9ca3af;">›</span>
       </div>
+      <div class="menu-item" onclick="closeMenu();openReminderSettings()">
+        <div class="menu-item-icon" style="background:#fef9c3;">🔔</div>
+        <div style="flex:1;">
+          <div class="menu-item-label">Reminder Settings</div>
+          <div class="menu-item-desc">Set days before for each alert</div>
+        </div>
+        <span style="font-size:0.75rem;color:#9ca3af;">›</span>
+      </div>
 
       <div class="menu-divider"></div>
 
@@ -4308,6 +4377,58 @@ async function loadFromCloud(){
       </div>
 
     </div><!-- end menu-scroll -->
+  </div>
+</div>
+
+<!-- REMINDER SETTINGS MODAL -->
+<div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;" id="reminderSettingsModal">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;margin:auto;margin-top:16px;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <div style="background:linear-gradient(135deg,#1a56db,#2563eb);padding:16px 18px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;">🔔 Reminder Settings</div>
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.7);margin-top:2px;">Days before expiry to get alert</div>
+      </div>
+      <button onclick="closeReminderSettings()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:8px;width:32px;height:32px;font-size:1rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:16px 18px;">
+
+      <div style="background:#eff6ff;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #bfdbfe;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;color:#1e40af;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🚗 Vehicle Documents</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label>🔧 FC (days before)</label><input type="number" id="rs_fc" min="1" max="365" placeholder="30"/></div>
+          <div><label>🛡️ Insurance (days before)</label><input type="number" id="rs_ins" min="1" max="365" placeholder="60"/></div>
+          <div><label>🏛️ Road Tax (days before)</label><input type="number" id="rs_tax" min="1" max="365" placeholder="30"/></div>
+          <div><label>🌿 PUCC (days before)</label><input type="number" id="rs_pucc" min="1" max="365" placeholder="15"/></div>
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #bbf7d0;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;color:#065f46;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🗂️ Personal Documents</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label>🛂 Passport (days before)</label><input type="number" id="rs_passport" min="1" max="365" placeholder="90"/></div>
+          <div><label>🏥 Health Insurance (days before)</label><input type="number" id="rs_health" min="1" max="365" placeholder="60"/></div>
+        </div>
+      </div>
+
+      <div style="background:#fefce8;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #fde68a;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;color:#92400e;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🔔 Task Reminders</div>
+        <div><label>Alert how many days before due date</label><input type="number" id="rs_task" min="1" max="60" placeholder="10"/></div>
+      </div>
+
+      <div style="background:#fff7ed;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #fed7aa;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;color:#92400e;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🔧 Vehicle Maintenance KMS</div>
+        <div><label>Alert when KMS remaining is less than</label><input type="number" id="rs_kms" min="100" max="5000" placeholder="500"/></div>
+      </div>
+
+      <div style="background:#f3f4f6;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.78rem;color:#6b7280;line-height:1.6;">
+        💡 These settings apply to both <b>in-app inbox alerts</b> and <b>Telegram daily message</b>. Saved to Firebase automatically.
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-full" onclick="saveReminderSettings()">✓ Save Settings</button>
+        <button class="btn btn-ghost" onclick="closeReminderSettings()">✕</button>
+      </div>
+    </div>
   </div>
 </div>
 
