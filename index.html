@@ -3431,6 +3431,59 @@ function openReminderSettings(){
     if(el) el.value = reminderSettings[key] || RS_DEFAULTS[key];
   });
   document.getElementById('reminderSettingsModal').style.display = 'flex';
+  loadWaConfigIntoForm();
+}
+
+// ── WhatsApp config (stored in its own private Firestore doc, never in localStorage/backups) ──
+function waConfigDoc(){
+  return db.collection('users').doc(currentUID).collection('data').doc('waConfig');
+}
+
+async function loadWaConfigIntoForm(){
+  var tokenEl = document.getElementById('wa_token');
+  var statusEl = document.getElementById('waStatusLine');
+  tokenEl.value = '';
+  try {
+    var snap = await waConfigDoc().get();
+    var cfg = snap.exists ? snap.data() : {};
+    document.getElementById('wa_phoneId').value  = cfg.phoneId  || '';
+    document.getElementById('wa_toNumber').value = cfg.toNumber || '';
+    document.getElementById('wa_template').value = cfg.template || 'ps_daily_reminder';
+    if(cfg.token){
+      tokenEl.placeholder = 'Saved ✓ — leave blank to keep';
+      statusEl.textContent = '✅ WhatsApp details saved';
+      statusEl.style.color = '#057a55';
+    } else {
+      tokenEl.placeholder = 'Paste token (EAAG...)';
+      statusEl.textContent = 'Not set up yet';
+      statusEl.style.color = '#6b7280';
+    }
+  } catch(e){
+    statusEl.textContent = '⚠️ Could not load saved WhatsApp details';
+    statusEl.style.color = '#d03801';
+  }
+}
+
+async function saveWaConfig(){
+  var token    = document.getElementById('wa_token').value.trim();
+  var phoneId  = document.getElementById('wa_phoneId').value.replace(/\D/g,'');
+  var toNumber = document.getElementById('wa_toNumber').value.replace(/\D/g,'');
+  var template = document.getElementById('wa_template').value.trim();
+
+  // Nothing typed at all → leave WhatsApp config untouched
+  if(!token && !phoneId && !toNumber && !template) return true;
+
+  if(toNumber.length === 10) toNumber = '91' + toNumber;   // India default
+  if(toNumber && toNumber.length < 11){ showToast('❌ WhatsApp number looks too short', 'red'); return false; }
+
+  var data = { updatedAt: new Date().toISOString() };
+  if(token)    data.token    = token;      // blank = keep old token
+  if(phoneId)  data.phoneId  = phoneId;
+  if(toNumber) data.toNumber = toNumber;
+  if(template) data.template = template;
+
+  await waConfigDoc().set(data, { merge: true });
+  return true;
 }
 
 function closeReminderSettings(){
@@ -3449,12 +3502,14 @@ async function saveReminderSettings(){
   // Save locally
   localStorage.setItem('reminderSettings', JSON.stringify(reminderSettings));
 
-  // Save to Firebase so Telegram also uses these settings
+  // Save to Firebase so the daily WhatsApp reminder uses these settings too
   try {
     await userDoc().set({ reminderSettings: reminderSettings }, { merge: true });
+    var waOk = await saveWaConfig();
+    if(waOk === false) return;   // validation message already shown, keep modal open
     showToast('✅ Reminder settings saved!', 'green');
   } catch(e){
-    showToast('✅ Saved locally. Firebase sync failed.', 'orange');
+    showToast('⚠️ Saved on this device only. Cloud sync failed.', 'orange');
   }
 
   closeReminderSettings();
@@ -4420,8 +4475,30 @@ async function loadFromCloud(){
         <div><label>Alert when KMS remaining is less than</label><input type="number" id="rs_kms" min="100" max="5000" placeholder="500"/></div>
       </div>
 
+      <!-- WhatsApp API -->
+      <div style="background:#ecfdf5;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #6ee7b7;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;color:#065f46;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">💬 WhatsApp Reminder (Meta API)</div>
+        <div id="waStatusLine" style="font-size:0.75rem;color:#6b7280;margin-bottom:12px;">Not set up yet</div>
+        <div style="margin-bottom:10px;">
+          <label>Access Token (permanent)</label>
+          <input type="password" id="wa_token" autocomplete="off" placeholder="Paste token (EAAG...)" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:1rem;"/>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>Phone Number ID</label>
+          <input type="text" id="wa_phoneId" inputmode="numeric" autocomplete="off" placeholder="e.g. 123456789012345"/>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label>Send reminders to (your WhatsApp number)</label>
+          <input type="text" id="wa_toNumber" inputmode="tel" autocomplete="off" placeholder="e.g. 9876543210"/>
+        </div>
+        <div>
+          <label>Template Name</label>
+          <input type="text" id="wa_template" autocomplete="off" placeholder="ps_daily_reminder"/>
+        </div>
+      </div>
+
       <div style="background:#f3f4f6;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.78rem;color:#6b7280;line-height:1.6;">
-        💡 These settings apply to both <b>in-app inbox alerts</b> and <b>Telegram daily message</b>. Saved to Firebase automatically.
+        💡 Days-before settings apply to <b>in-app alerts</b> and the <b>daily WhatsApp message</b>. WhatsApp details are saved privately in your own account only (not in backups). After saving, test from GitHub → ps-reminder → Actions → Run workflow.
       </div>
 
       <div style="display:flex;gap:10px;">
